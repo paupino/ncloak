@@ -5,6 +5,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiviT.NCloak", "src\TiviT.N
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiviT.NCloak.Console", "src\TiviT.NCloak.Console\TiviT.NCloak.Console.csproj", "{9BF2A4D1-ADC8-4A2A-BB88-89BB50022767}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{9EF123E4-A962-4A72-A0FB-65F3C8B07893}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiviT.NCloak.Tests", "src\Tests\TiviT.NCloak.Tests\TiviT.NCloak.Tests.csproj", "{3D5D40A9-A223-4D57-BF7A-C506E23C197D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{18127EA7-933B-4885-B54F-B64407367AA4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleLibrary", "src\samples\SimpleLibrary\SimpleLibrary.csproj", "{BDCD88DE-D0EE-4002-B5F8-B303DAD454A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleProgram", "src\samples\SimpleProgram\SimpleProgram.csproj", "{3242130E-3B48-40FA-87D3-AE3A3C28503C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,8 +29,25 @@ Global
 		{9BF2A4D1-ADC8-4A2A-BB88-89BB50022767}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BF2A4D1-ADC8-4A2A-BB88-89BB50022767}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BF2A4D1-ADC8-4A2A-BB88-89BB50022767}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D5D40A9-A223-4D57-BF7A-C506E23C197D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D5D40A9-A223-4D57-BF7A-C506E23C197D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D5D40A9-A223-4D57-BF7A-C506E23C197D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D5D40A9-A223-4D57-BF7A-C506E23C197D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDCD88DE-D0EE-4002-B5F8-B303DAD454A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDCD88DE-D0EE-4002-B5F8-B303DAD454A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDCD88DE-D0EE-4002-B5F8-B303DAD454A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDCD88DE-D0EE-4002-B5F8-B303DAD454A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3242130E-3B48-40FA-87D3-AE3A3C28503C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3242130E-3B48-40FA-87D3-AE3A3C28503C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3242130E-3B48-40FA-87D3-AE3A3C28503C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3242130E-3B48-40FA-87D3-AE3A3C28503C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3D5D40A9-A223-4D57-BF7A-C506E23C197D} = {9EF123E4-A962-4A72-A0FB-65F3C8B07893}
+		{BDCD88DE-D0EE-4002-B5F8-B303DAD454A0} = {18127EA7-933B-4885-B54F-B64407367AA4}
+		{3242130E-3B48-40FA-87D3-AE3A3C28503C} = {18127EA7-933B-4885-B54F-B64407367AA4}
 	EndGlobalSection
 EndGlobal

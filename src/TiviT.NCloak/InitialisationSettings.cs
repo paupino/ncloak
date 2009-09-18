@@ -9,7 +9,6 @@ namespace TiviT.NCloak
     {
         private readonly List<string> assembliesToObfuscate;
         private bool validated;
-        private readonly NameManager nameManager;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InitialisationSettings"/> class.
@@ -17,19 +16,10 @@ namespace TiviT.NCloak
         public InitialisationSettings()
         {
             assembliesToObfuscate = new List<string>();
-            nameManager = new NameManager();
             validated = false;
         }
 
-        /// <summary>
-        /// Gets the name manager used to keep track of unique names for each type.
-        /// </summary>
-        /// <value>The name manager.</value>
-        public NameManager NameManager
-        {
-            get { return nameManager; }
-        }
-
+        
         /// <summary>
         /// Gets a list of the assemblies to obfuscate.
         /// </summary>
@@ -47,6 +37,19 @@ namespace TiviT.NCloak
         /// </summary>
         /// <value>The output directory.</value>
         public string OutputDirectory { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the obfuscator should obfuscate all access modifiers as opposed
+        /// to just private access modifiers
+        /// </summary>
+        /// <value>
+        /// 	<c>true</c> to obfuscate all modifiers; otherwise, <c>false</c>.
+        /// </value>
+        public bool ObfuscateAllModifiers
+        {
+            get;
+            set;
+        }
 
         /// <summary>
         /// Validates the initialisation settings.

@@ -1,31 +1,42 @@
 ﻿using System;
+using System.Collections.Generic;
+using TiviT.NCloak.CloakTasks;
 
 namespace TiviT.NCloak
 {
     public class CloakManager
     {
-        private readonly InitialisationSettings settings;
+        private readonly List<ICloakTask> cloakingTasks;
 
-        public CloakManager(InitialisationSettings settings)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloakManager"/> class.
+        /// </summary>
+        public CloakManager()
         {
-            //Make sure it isn't null
-            if (settings == null) throw new ArgumentNullException("settings");
+            cloakingTasks = new List<ICloakTask>();
+        }
 
-            //Validate the settings
-            settings.Validate();
-
-            //Set the local version
-            this.settings = settings;
+        /// <summary>
+        /// Registers the cloaking task in the job pipeline.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void RegisterTask<T>() where T : ICloakTask
+        {
+            ICloakTask task = Activator.CreateInstance<T>();
+            cloakingTasks.Add(task);
         }
 
         /// <summary>
         /// Runs the clock process.
         /// </summary>
-        public void Run()
+        public void Run(ICloakContext context)
         {
-            //Later on we'll do this properly allowing them to pick and choose which tasks to run...
-            ICloakTask task = new ObfuscationTask();
-            task.RunTask(settings);
+            //Make sure we have a context
+            if (context == null) throw new ArgumentNullException("context");
+
+            //Run through each of our tasks
+            foreach (ICloakTask task in cloakingTasks)
+                task.RunTask(context);
         }
     }
 }

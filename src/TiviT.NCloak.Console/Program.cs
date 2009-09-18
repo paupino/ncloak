@@ -5,12 +5,17 @@
         static void Main(string[] args)
         {
             //Basic parsing of arguments for now
-            CommandLineArgumentParser parser = new CommandLineArgumentParser();
+            var parser = new CommandLineArgumentParser();
             parser.Parse(args);
 
-            //Run the cloak manager
-            CloakManager manager = new CloakManager(parser.Settings);
-            manager.Run();
+            //Create a cloak manager
+            var manager = new CloakManager();
+            //Configure it (as necessary) - tasks etc
+            parser.Configure(manager);
+            //Create a cloaking context
+            var cloakContext = new CloakContext(parser.Settings);
+            //Run the manager
+            manager.Run(cloakContext);
         }
     }
 }

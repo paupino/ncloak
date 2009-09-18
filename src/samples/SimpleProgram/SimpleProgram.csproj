@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{0F869367-FA5A-4DB2-B4E6-06EF3916E88E}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{3242130E-3B48-40FA-87D3-AE3A3C28503C}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TiviT.NCloak</RootNamespace>
-    <AssemblyName>TiviT.NCloak</AssemblyName>
+    <RootNamespace>SimpleProgram</RootNamespace>
+    <AssemblyName>SimpleProgram</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -31,10 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Mono.Cecil, Version=0.6.8.8607, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\lib\Mono.Cecil.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -49,23 +45,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AttributeExtensions.cs" />
-    <Compile Include="CharacterSet.cs" />
-    <Compile Include="CloakContext.cs" />
-    <Compile Include="CloakManager.cs" />
-    <Compile Include="CloakTasks\MappingTask.cs" />
-    <Compile Include="ICloakContext.cs" />
-    <Compile Include="CloakTasks\ICloakTask.cs" />
-    <Compile Include="InitialisationException.cs" />
-    <Compile Include="InitialisationSettings.cs" />
-    <Compile Include="Mapping\MappingGraph.cs" />
-    <Compile Include="Mapping\MemberMapping.cs" />
-    <Compile Include="Mapping\TypeMapping.cs" />
-    <Compile Include="Mapping\AssemblyMapping.cs" />
-    <Compile Include="NameManager.cs" />
-    <Compile Include="NamingTable.cs" />
-    <Compile Include="CloakTasks\ObfuscationTask.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SimpleLibrary\SimpleLibrary.csproj">
+      <Project>{BDCD88DE-D0EE-4002-B5F8-B303DAD454A0}</Project>
+      <Name>SimpleLibrary</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -75,4 +62,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(TargetDir)*.*" "$(SolutionDir)src\Tests\TiviT.NCloak.Tests\$(OutDir)"</PostBuildEvent>
+  </PropertyGroup>
 </Project>

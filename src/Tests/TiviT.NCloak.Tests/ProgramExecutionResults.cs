@@ -47,6 +47,7 @@ namespace TiviT.NCloak.Tests
             processStartInfo.RedirectStandardOutput = true;
             processStartInfo.RedirectStandardInput = true;
             processStartInfo.UseShellExecute = false;
+            processStartInfo.ErrorDialog = false;
             Process process = Process.Start(processStartInfo);
 
             //Do some assertions and checks!
@@ -66,7 +67,8 @@ namespace TiviT.NCloak.Tests
             Assert.That(stdOut.ReadLine(), Is.Not.Empty, "Rubbish line 1");
             Assert.That(stdOut.ReadLine(), Is.Not.Empty, "Rubbish line 2");
             //Check the registered commands text
-            Assert.That(stdOut.ReadLine(), Is.EqualTo("Registered commands are:"), "Registered commands introduction");
+            Assert.That(stdOut.ReadLine(), Is.EqualTo("Registered commands are:"),
+                        "Registered commands introduction");
             Assert.That(stdOut.ReadLine(), Is.EqualTo("quit hello "), "Registered commands");
 
             //Make sure that the prompt is displayed
@@ -76,18 +78,18 @@ namespace TiviT.NCloak.Tests
 
             //Send through the hello command
             stdIn.WriteLine("hello");
-            
+
             //Check the results
             Assert.That(stdOut.ReadLine(), Is.EqualTo("Hello " + Environment.UserName), "Hello output");
             Assert.That(stdOut.ReadLine(), Is.EqualTo("Command completed successfully"), "Hello command successful");
-            
+
             //Check the prompt again
             stdOut.Read(promptBuffer, 0, 2);
             Assert.That(new String(promptBuffer), Is.EqualTo("> "), "Prompt 2");
 
             //Send through the quit command
             stdIn.WriteLine("quit");
-            
+
             //Check the results
             Assert.That(stdOut.ReadLine(), Is.EqualTo("Command completed successfully"), "Hello command successful");
 

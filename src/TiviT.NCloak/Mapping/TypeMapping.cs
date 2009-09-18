@@ -11,6 +11,10 @@ namespace TiviT.NCloak.Mapping
         private readonly Dictionary<string, MemberMapping> properties;
         private readonly Dictionary<string, MemberMapping> fields;
 
+        private readonly Dictionary<string, string> obfuscatedMethods;
+        private readonly Dictionary<string, string> obfuscatedProperties;
+        private readonly Dictionary<string, string> obfuscatedFields;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TypeMapping"/> class.
         /// </summary>
@@ -24,6 +28,10 @@ namespace TiviT.NCloak.Mapping
             methods = new Dictionary<string, MemberMapping>();
             properties = new Dictionary<string, MemberMapping>();
             fields = new Dictionary<string, MemberMapping>();
+
+            obfuscatedMethods = new Dictionary<string, string>();
+            obfuscatedProperties = new Dictionary<string, string>();
+            obfuscatedFields = new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -52,6 +60,7 @@ namespace TiviT.NCloak.Mapping
         public void AddMethodMapping(string methodName, string obfuscatedMethodName)
         {
             methods.Add(methodName, new MemberMapping(methodName, obfuscatedMethodName));
+            obfuscatedMethods.Add(obfuscatedMethodName, methodName);
         }
 
         /// <summary>
@@ -62,6 +71,7 @@ namespace TiviT.NCloak.Mapping
         public void AddPropertyMapping(string propertyName, string obfuscatedPropertyName)
         {
             properties.Add(propertyName, new MemberMapping(propertyName, obfuscatedPropertyName));
+            obfuscatedProperties.Add(obfuscatedPropertyName, propertyName);
         }
 
         /// <summary>
@@ -72,6 +82,7 @@ namespace TiviT.NCloak.Mapping
         public void AddFieldMapping(string fieldName, string obfuscatedFieldName)
         {
             fields.Add(fieldName, new MemberMapping(fieldName, obfuscatedFieldName));
+            obfuscatedFields.Add(obfuscatedFieldName, fieldName);
         }
 
         /// <summary>
@@ -144,6 +155,42 @@ namespace TiviT.NCloak.Mapping
             if (HasFieldMapping(fieldName))
                 return fields[fieldName].ObfuscatedMemberName;
             return null;
+        }
+
+        /// <summary>
+        /// Determines whether the specified method name has already been obfuscated
+        /// </summary>
+        /// <param name="obfuscatedMethodName">Name of the obfuscated method.</param>
+        /// <returns>
+        /// 	<c>true</c> if the method has been obfuscated; otherwise, <c>false</c>.
+        /// </returns>
+        public bool HasMethodBeenObfuscated(string obfuscatedMethodName)
+        {
+            return obfuscatedMethods.ContainsKey(obfuscatedMethodName);
+        }
+
+        /// <summary>
+        /// Determines whether the specified property name has already been obfuscated
+        /// </summary>
+        /// <param name="obfuscatedPropertyName">Name of the obfuscated property.</param>
+        /// <returns>
+        /// 	<c>true</c> if the property has been obfuscated; otherwise, <c>false</c>.
+        /// </returns>
+        public bool HasPropertyBeenObfuscated(string obfuscatedPropertyName)
+        {
+            return obfuscatedProperties.ContainsKey(obfuscatedPropertyName);
+        }
+
+        /// <summary>
+        /// Determines whether the specified field name has already been obfuscated
+        /// </summary>
+        /// <param name="obfuscatedFieldName">Name of the obfuscated field.</param>
+        /// <returns>
+        /// 	<c>true</c> if the field has been obfuscated; otherwise, <c>false</c>.
+        /// </returns>
+        public bool HasFieldBeenObfuscated(string obfuscatedFieldName)
+        {
+            return obfuscatedFields.ContainsKey(obfuscatedFieldName);
         }
     }
 }

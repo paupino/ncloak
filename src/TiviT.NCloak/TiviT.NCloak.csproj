@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AttributeExtensions.cs" />
+    <Compile Include="CecilExtensions.cs" />
     <Compile Include="CharacterSet.cs" />
     <Compile Include="CloakContext.cs" />
     <Compile Include="CloakManager.cs" />

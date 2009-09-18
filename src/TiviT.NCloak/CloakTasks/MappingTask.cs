@@ -1,4 +1,5 @@
-﻿using Mono.Cecil;
+﻿using System;
+using Mono.Cecil;
 using TiviT.NCloak.Mapping;
 
 namespace TiviT.NCloak.CloakTasks
@@ -47,19 +48,73 @@ namespace TiviT.NCloak.CloakTasks
                 //Go through each type
                 foreach (TypeDefinition typeDefinition in moduleDefinition.Types)
                 {
-                    TypeMapping typeMapping;
-                    if (obfuscateAll)
-                        typeMapping = assemblyMapping.AddType(typeDefinition.Name, nameManager.GenerateName(NamingTable.Type));
-                    else
-                        typeMapping = assemblyMapping.AddType(typeDefinition.Name, null);
+                    //First of all - see if we've declared it already - if so get the existing reference
+                    TypeMapping typeMapping = assemblyMapping.GetTypeMapping(typeDefinition.Name);
+                    if (typeMapping == null)
+                    {
+                        //We don't have it - get it
+                        if (obfuscateAll)
+                            typeMapping = assemblyMapping.AddType(typeDefinition.Name,
+                                                                  nameManager.GenerateName(NamingTable.Type));
+                        else
+                            typeMapping = assemblyMapping.AddType(typeDefinition.Name, null);
+                    }
 
                     //Go through each method
                     foreach (MethodDefinition methodDefinition in typeDefinition.Methods)
                     {
+                        //First of all - check if we've obfuscated it already - if we have then don't bother
+                        if (typeMapping.HasMethodBeenObfuscated(methodDefinition.Name))
+                            continue;
+
+                        //We haven't - let's work out the obfuscated name
                         if (obfuscateAll)
                         {
-                            //TODO Take into account whether this is overriden, or an interface implementation
-                            typeMapping.AddMethodMapping(methodDefinition.Name,
+                            //Take into account whether this is overriden, or an interface implementation
+                            if (methodDefinition.IsVirtual)
+                            {
+                                //We handle this differently - rather than creating a new name each time we need to reuse any already generated names
+                                //We do this by firstly finding the root interface or object
+                                TypeDefinition baseType = FindBaseTypeDeclaration(typeDefinition, methodDefinition);
+                                if (baseType != null)
+                                {
+                                    //Find it in the mappings 
+                                    TypeMapping baseTypeMapping = assemblyMapping.GetTypeMapping(baseType.Name);
+                                    if (baseTypeMapping != null)
+                                    {
+                                        //We found the type mapping - look up the name it uses for this method and use that
+                                        if (baseTypeMapping.HasMethodMapping(methodDefinition.Name))
+                                            typeMapping.AddMethodMapping(methodDefinition.Name, baseTypeMapping.GetObfuscatedMethodName(methodDefinition.Name));
+                                        else
+                                        {
+                                            //That's strange... we shouldn't get into here - but if we ever do then
+                                            //we'll add the type mapping into both
+                                            string obfuscatedName = nameManager.GenerateName(NamingTable.Method);
+                                            typeMapping.AddMethodMapping(methodDefinition.Name, obfuscatedName);
+                                            baseTypeMapping.AddMethodMapping(methodDefinition.Name, obfuscatedName);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //Otherwise add it into our list manually
+                                        //at the base level first off
+                                        baseTypeMapping = assemblyMapping.AddType(baseType.Name,
+                                                                  nameManager.GenerateName(NamingTable.Type));
+                                        string obfuscatedName = nameManager.GenerateName(NamingTable.Method);
+                                        baseTypeMapping.AddMethodMapping(methodDefinition.Name, obfuscatedName);
+                                        //Now at our implemented level
+                                        typeMapping.AddMethodMapping(methodDefinition.Name, obfuscatedName);
+                                    }
+                                }
+                                else
+                                {
+                                    //We must be at the base already - add normally
+                                    typeMapping.AddMethodMapping(methodDefinition.Name,
+                                                         nameManager.GenerateName(NamingTable.Method));
+                                }
+                            }
+                            else //Add normally
+                                typeMapping.AddMethodMapping(methodDefinition.Name,
                                                          nameManager.GenerateName(NamingTable.Method));
                         }
                         else if (methodDefinition.IsPrivate)
@@ -69,10 +124,17 @@ namespace TiviT.NCloak.CloakTasks
                     //Properties
                     foreach (PropertyDefinition propertyDefinition in typeDefinition.Properties)
                     {
+                        //First of all - check if we've obfuscated it already - if we have then don't bother
+                        if (typeMapping.HasPropertyBeenObfuscated(propertyDefinition.Name))
+                            continue;
+
+                        //Go through the old fashioned way
                         if (obfuscateAll)
                         {
-                            //TODO Take into account whether this is overriden, or an interface implementation
-                            typeMapping.AddPropertyMapping(propertyDefinition.Name,
+                            if ((propertyDefinition.GetMethod != null && propertyDefinition.GetMethod.IsVirtual) || (propertyDefinition.SetMethod != null && propertyDefinition.SetMethod.IsVirtual))
+                                throw new NotImplementedException();
+                            else
+                                typeMapping.AddPropertyMapping(propertyDefinition.Name,
                                                            nameManager.GenerateName(NamingTable.Property));
                         }
                         else if (propertyDefinition.GetMethod != null && propertyDefinition.SetMethod != null)
@@ -98,6 +160,10 @@ namespace TiviT.NCloak.CloakTasks
                     //Fields
                     foreach (FieldDefinition fieldDefinition in typeDefinition.Fields)
                     {
+                        //First of all - check if we've obfuscated it already - if we have then don't bother
+                        if (typeMapping.HasFieldBeenObfuscated(fieldDefinition.Name))
+                            continue;
+
                         if (obfuscateAll)
                             typeMapping.AddFieldMapping(fieldDefinition.Name, nameManager.GenerateName(NamingTable.Field));
                         else if (fieldDefinition.IsPrivate)
@@ -108,6 +174,51 @@ namespace TiviT.NCloak.CloakTasks
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Recursively finds the base type declaration for the given method name.
+        /// </summary>
+        /// <param name="definition">The definition.</param>
+        /// <param name="method">The method definition/reference.</param>
+        /// <returns></returns>
+        private static TypeDefinition FindBaseTypeDeclaration(TypeDefinition definition, MethodReference method)
+        {
+            //Search the interfaces first
+            foreach (TypeReference tr in definition.Interfaces)
+            {
+                //Convert to a type definition
+                TypeDefinition td = tr.GetTypeDefinition();
+                MethodDefinition md = td.Methods.FindMethod(method.Name, method.Parameters);
+                if (md != null)
+                    return td;
+
+                //Do a recursive search below
+                TypeDefinition baseInterface = FindBaseTypeDeclaration(td, method);
+                if (baseInterface != null)
+                    return baseInterface;
+            }
+
+            //Search the base class
+            TypeReference baseTr = definition.BaseType;
+            if (baseTr != null)
+            {
+                TypeDefinition baseTd = baseTr.GetTypeDefinition();
+                if (baseTd != null)
+                {
+                    MethodDefinition md = baseTd.Methods.FindMethod(method.Name, method.Parameters);
+                    if (md != null)
+                        return baseTd;
+
+                    //Do a recursive search below
+                    TypeDefinition baseClass = FindBaseTypeDeclaration(baseTd, method);
+                    if (baseClass != null)
+                        return baseClass;
+                }
+            }
+
+            //We've exhausted all options
+            return null;
         }
     }
 }

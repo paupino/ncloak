@@ -1,5 +1,4 @@
-﻿using System;
-using Mono.Cecil;
+﻿using Mono.Cecil;
 using TiviT.NCloak.Mapping;
 
 namespace TiviT.NCloak.CloakTasks
@@ -131,8 +130,49 @@ namespace TiviT.NCloak.CloakTasks
                         //Go through the old fashioned way
                         if (obfuscateAll)
                         {
-                            if ((propertyDefinition.GetMethod != null && propertyDefinition.GetMethod.IsVirtual) || (propertyDefinition.SetMethod != null && propertyDefinition.SetMethod.IsVirtual))
-                                throw new NotImplementedException();
+                            if ((propertyDefinition.GetMethod != null && propertyDefinition.GetMethod.IsVirtual) || 
+                                (propertyDefinition.SetMethod != null && propertyDefinition.SetMethod.IsVirtual))
+                            {
+                                //We handle this differently - rather than creating a new name each time we need to reuse any already generated names
+                                //We do this by firstly finding the root interface or object
+                                TypeDefinition baseType = FindBaseTypeDeclaration(typeDefinition, propertyDefinition);
+                                if (baseType != null)
+                                {
+                                    //Find it in the mappings 
+                                    TypeMapping baseTypeMapping = assemblyMapping.GetTypeMapping(baseType.Name);
+                                    if (baseTypeMapping != null)
+                                    {
+                                        //We found the type mapping - look up the name it uses for this property and use that
+                                        if (baseTypeMapping.HasPropertyMapping(propertyDefinition.Name))
+                                            typeMapping.AddPropertyMapping(propertyDefinition.Name, baseTypeMapping.GetObfuscatedPropertyName(propertyDefinition.Name));
+                                        else
+                                        {
+                                            //That's strange... we shouldn't get into here - but if we ever do then
+                                            //we'll add the type mapping into both
+                                            string obfuscatedName = nameManager.GenerateName(NamingTable.Property);
+                                            typeMapping.AddPropertyMapping(propertyDefinition.Name, obfuscatedName);
+                                            baseTypeMapping.AddPropertyMapping(propertyDefinition.Name, obfuscatedName);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //Otherwise add it into our list manually
+                                        //at the base level first off
+                                        baseTypeMapping = assemblyMapping.AddType(baseType.Name,
+                                                                  nameManager.GenerateName(NamingTable.Type));
+                                        string obfuscatedName = nameManager.GenerateName(NamingTable.Property);
+                                        baseTypeMapping.AddPropertyMapping(propertyDefinition.Name, obfuscatedName);
+                                        //Now at our implemented level
+                                        typeMapping.AddPropertyMapping(propertyDefinition.Name, obfuscatedName);
+                                    }
+                                }
+                                else
+                                {
+                                    //We must be at the base already - add normally
+                                    typeMapping.AddPropertyMapping(propertyDefinition.Name,
+                                                         nameManager.GenerateName(NamingTable.Property));
+                                }
+                            }
                             else
                                 typeMapping.AddPropertyMapping(propertyDefinition.Name,
                                                            nameManager.GenerateName(NamingTable.Property));
@@ -212,6 +252,51 @@ namespace TiviT.NCloak.CloakTasks
 
                     //Do a recursive search below
                     TypeDefinition baseClass = FindBaseTypeDeclaration(baseTd, method);
+                    if (baseClass != null)
+                        return baseClass;
+                }
+            }
+
+            //We've exhausted all options
+            return null;
+        }
+
+        /// <summary>
+        /// Recursively finds the base type declaration for the given method name.
+        /// </summary>
+        /// <param name="definition">The definition.</param>
+        /// <param name="property">The property definition/reference.</param>
+        /// <returns></returns>
+        private static TypeDefinition FindBaseTypeDeclaration(TypeDefinition definition, IMemberReference property)
+        {
+            //Search the interfaces first
+            foreach (TypeReference tr in definition.Interfaces)
+            {
+                //Convert to a type definition
+                TypeDefinition td = tr.GetTypeDefinition();
+                PropertyDefinition[] pd = td.Properties.GetProperties(property.Name);
+                if (pd != null && pd.Length > 0)
+                    return td; 
+
+                //Do a recursive search below
+                TypeDefinition baseInterface = FindBaseTypeDeclaration(td, property);
+                if (baseInterface != null)
+                    return baseInterface;
+            }
+
+            //Search the base class
+            TypeReference baseTr = definition.BaseType;
+            if (baseTr != null)
+            {
+                TypeDefinition baseTd = baseTr.GetTypeDefinition();
+                if (baseTd != null)
+                {
+                    PropertyDefinition[] pd = baseTd.Properties.GetProperties(property.Name);
+                    if (pd != null && pd.Length > 0)
+                        return baseTd;
+
+                    //Do a recursive search below
+                    TypeDefinition baseClass = FindBaseTypeDeclaration(baseTd, property);
                     if (baseClass != null)
                         return baseClass;
                 }

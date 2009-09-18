@@ -33,8 +33,13 @@ namespace TiviT.NCloak.Console
         public void Parse(string[] args)
         {
             //If we have no arguments then get out of here
-            if (args == null)
+            if (args == null || args.Length == 0)
+            {
+                System.Console.Error.WriteLine("The syntax of this command is incorrect.");
+                System.Console.Error.WriteLine("Use -? for help on how to use this program");
+                Environment.Exit(1);
                 return;
+            }
 
             //Go through and parse the arguments
             for (int i = 0; i < args.Length; i++)
@@ -56,6 +61,12 @@ namespace TiviT.NCloak.Console
                             //Apply full obfuscation to public members
                             settings.ObfuscateAllModifiers = true;
                             break;
+
+                        case "?":
+                        case "help":
+                            DisplayUsage();
+                            Environment.Exit(1);
+                            return;
 
                         default:
                             DisplayError("Unrecognised command line option");
@@ -85,6 +96,30 @@ namespace TiviT.NCloak.Console
                 string outputDir = Path.Combine(currentDir, "Obfuscated");
                 SetOutputDirectory(outputDir);
             }
+        }
+
+        /// <summary>
+        /// Displays the usage.
+        /// </summary>
+        private static void DisplayUsage()
+        {
+            System.Console.WriteLine();
+            System.Console.WriteLine("=====================================================");
+            System.Console.WriteLine("NCloak - the open source .NET code protection utility");
+            System.Console.WriteLine("Written by Paul Mason (c) 2009");
+            System.Console.WriteLine("=====================================================");
+            System.Console.WriteLine();
+            System.Console.WriteLine("Released under the MIT license; for access to the latest version, source");
+            System.Console.WriteLine("code, and bug reporting please visit http://code.google.com/p/ncloak/");
+            System.Console.WriteLine();
+            System.Console.WriteLine("Usage:");
+            System.Console.WriteLine();
+            System.Console.WriteLine(" {0} [/full] [/out outputLocation] assemblies", Assembly.GetExecutingAssembly().GetName().Name);
+            System.Console.WriteLine();
+            System.Console.WriteLine("  /full\t\tSpecifies that all members should be included in obfuscation");
+            System.Console.WriteLine("  /out\t\tSpecifies the output location of all protected assemblies");
+            System.Console.WriteLine("  assemblies\tSpecifies the assemblies to include in the code protection tasks");
+            System.Console.WriteLine();
         }
 
         /// <summary>
@@ -118,3 +153,4 @@ namespace TiviT.NCloak.Console
         }
     }
 }
+

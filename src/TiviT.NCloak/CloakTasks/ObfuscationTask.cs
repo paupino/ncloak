@@ -126,6 +126,16 @@ namespace TiviT.NCloak.CloakTasks
                             }
 
                             break;
+                        case "stfld":
+                        case "ldfld":
+#if DEBUG
+                            Console.WriteLine("Discovered {0} {1} ({2})", instruction.OpCode.Name, instruction.Operand, instruction.Operand.GetType().Name);
+#endif
+                            //Look at the operand
+                            FieldReference fieldReference = instruction.Operand as FieldReference;
+                            if (fieldReference != null)
+                                UpdateMemberTypeReferences(context, fieldReference);
+                            break;
                     }
                 }
             }
@@ -164,6 +174,11 @@ namespace TiviT.NCloak.CloakTasks
                         //Update the method name also if available
                         if (t.HasMethodMapping(meth.Name))
                             meth.Name = t.GetObfuscatedMethodName(meth.Name);
+                    }
+                    else if (memberReference is FieldReference)
+                    {
+                        if (t.HasFieldMapping(memberReference.Name))
+                            memberReference.Name = t.GetObfuscatedFieldName(memberReference.Name);
                     }
                     else
                     {

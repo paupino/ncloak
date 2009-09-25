@@ -10,6 +10,7 @@ namespace SimpleLibrary
     public class CommandLineService
     {
         private readonly Dictionary<string, CommandBase> commands;
+        public string Name;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandLineService"/> class.

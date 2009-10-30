@@ -62,6 +62,10 @@ namespace TiviT.NCloak.Console
                             settings.ObfuscateAllModifiers = true;
                             break;
 
+                        case "strings":
+                            settings.EncryptStrings = true;
+                            break;
+
                         case "?":
                         case "help":
                             DisplayUsage();
@@ -118,6 +122,7 @@ namespace TiviT.NCloak.Console
             System.Console.WriteLine();
             System.Console.WriteLine("  /full\t\tSpecifies that all members should be included in obfuscation");
             System.Console.WriteLine("  /out\t\tSpecifies the output location of all protected assemblies");
+            System.Console.WriteLine("  /strings\t\tSpecifies that the obfuscator encrypts string constants");
             System.Console.WriteLine("  assemblies\tSpecifies the assemblies to include in the code protection tasks");
             System.Console.WriteLine();
         }
@@ -148,8 +153,11 @@ namespace TiviT.NCloak.Console
         public void Configure(CloakManager manager)
         {
             //For now we'll just register the basic tasks
+            if (settings.EncryptStrings) //Encrypt strings before anything else
+                manager.RegisterTask(new StringEncryptionTask(StringEncryptionMethod.Xor));
             manager.RegisterTask<MappingTask>();
             manager.RegisterTask<ObfuscationTask>();
+            manager.RegisterTask<OutputAssembliesTask>();
         }
     }
 }

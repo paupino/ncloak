@@ -16,9 +16,9 @@ namespace TiviT.NCloak.CloakTasks
             //just obfuscate private members
 
             //Loop through each assembly and process it
-            foreach (string assembly in context.Settings.AssembliesToObfuscate)
+            foreach (AssemblyDefinition definition in context.GetAssemblyDefinitions().Values)
             {
-                ProcessAssembly(context, assembly);
+                ProcessAssembly(context, definition);
             }
         }
 
@@ -26,14 +26,11 @@ namespace TiviT.NCloak.CloakTasks
         /// Processes the assembly - goes through each member and applies a mapping.
         /// </summary>
         /// <param name="context">The context.</param>
-        /// <param name="assembly">The assembly.</param>
-        private static void ProcessAssembly(ICloakContext context, string assembly)
+        /// <param name="definition">The assembly definition.</param>
+        private static void ProcessAssembly(ICloakContext context, AssemblyDefinition definition)
         {
             //Store whether to obfuscate all members
             bool obfuscateAll = context.Settings.ObfuscateAllModifiers;
-
-            //Get the assembly definition
-            AssemblyDefinition definition = AssemblyFactory.GetAssembly(assembly);
 
             //Set up the mapping graph
             AssemblyMapping assemblyMapping = context.MappingGraph.AddAssembly(definition);

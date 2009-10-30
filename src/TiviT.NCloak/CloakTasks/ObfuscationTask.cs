@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using TiviT.NCloak.Mapping;
@@ -14,9 +13,9 @@ namespace TiviT.NCloak.CloakTasks
         public void RunTask(ICloakContext context)
         {
             //Loop through each assembly and obfuscate it
-            foreach (string assembly in context.Settings.AssembliesToObfuscate)
+            foreach (AssemblyDefinition definition in context.GetAssemblyDefinitions().Values)
             {
-                Obfuscate(context, assembly);
+                Obfuscate(context, definition);
             }
         }
 
@@ -24,12 +23,9 @@ namespace TiviT.NCloak.CloakTasks
         /// Performs obfuscation on the specified assembly.
         /// </summary>
         /// <param name="context">The context.</param>
-        /// <param name="assembly">The assembly.</param>
-        private static void Obfuscate(ICloakContext context, string assembly)
+        /// <param name="definition">The assembly definition.</param>
+        private static void Obfuscate(ICloakContext context, AssemblyDefinition definition)
         {
-            //Get the assembly definition
-            AssemblyDefinition definition = AssemblyFactory.GetAssembly(assembly);
-
             //Get the assembly mapping information (if any)
             if (context.MappingGraph.IsAssemblyMappingDefined(definition))
             {
@@ -84,11 +80,6 @@ namespace TiviT.NCloak.CloakTasks
                     }
                 }
             }
-
-            //Save the assembly (ALWAYS)
-            string outputPath = Path.Combine(context.Settings.OutputDirectory, Path.GetFileName(assembly));
-            Console.WriteLine("Outputting assembly to {0}", outputPath);
-            AssemblyFactory.SaveAssembly(definition, outputPath);
         }
 
         private static void UpdateMethodReferences(ICloakContext context, MethodDefinition methodDefinition)

@@ -53,8 +53,11 @@
     <Compile Include="CecilExtensions.cs" />
     <Compile Include="CharacterSet.cs" />
     <Compile Include="CloakContext.cs" />
+    <Compile Include="CloakException.cs" />
     <Compile Include="CloakManager.cs" />
     <Compile Include="CloakTasks\MappingTask.cs" />
+    <Compile Include="CloakTasks\OutputAssembliesTask.cs" />
+    <Compile Include="CloakTasks\StringEncryptionTask.cs" />
     <Compile Include="ICloakContext.cs" />
     <Compile Include="CloakTasks\ICloakTask.cs" />
     <Compile Include="InitialisationException.cs" />
@@ -63,10 +66,13 @@
     <Compile Include="Mapping\MemberMapping.cs" />
     <Compile Include="Mapping\TypeMapping.cs" />
     <Compile Include="Mapping\AssemblyMapping.cs" />
+    <Compile Include="MemberNotFoundException.cs" />
     <Compile Include="NameManager.cs" />
     <Compile Include="NamingTable.cs" />
     <Compile Include="CloakTasks\ObfuscationTask.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StringEncryptionMethod.cs" />
+    <Compile Include="TypeNotFoundException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

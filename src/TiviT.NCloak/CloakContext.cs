@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using Mono.Cecil;
 using TiviT.NCloak.Mapping;
 
 namespace TiviT.NCloak
@@ -8,6 +10,8 @@ namespace TiviT.NCloak
         private readonly InitialisationSettings settings;
         private readonly NameManager nameManager;
         private readonly MappingGraph mappingGraph;
+        private readonly Dictionary<string, AssemblyDefinition> assemblyDefinitions;
+        private bool assemblyDefinitionsLoaded;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CloakContext"/> class.
@@ -29,6 +33,10 @@ namespace TiviT.NCloak
 
             //Create the mapping graph
             mappingGraph = new MappingGraph();
+
+            //Initialise the assembly definitions
+            assemblyDefinitionsLoaded = false;
+            assemblyDefinitions = new Dictionary<string, AssemblyDefinition>();
         }
 
         /// <summary>
@@ -56,6 +64,28 @@ namespace TiviT.NCloak
         public MappingGraph MappingGraph
         {
             get { return mappingGraph; }
+        }
+
+        /// <summary>
+        /// Gets the assembly definitions to be processed; this caches
+        /// the assembly definitions therefore needs to be treated as such.
+        /// TODO: Change Dictionary to a readonly alternative
+        /// </summary>
+        /// <returns></returns>
+        public Dictionary<string, AssemblyDefinition> GetAssemblyDefinitions()
+        {
+            if (assemblyDefinitionsLoaded)
+                return assemblyDefinitions;
+
+            //Initialise the list
+            foreach (string assembly in settings.AssembliesToObfuscate)
+            {
+                if (assemblyDefinitions.ContainsKey(assembly))
+                    continue;
+                assemblyDefinitions.Add(assembly, AssemblyFactory.GetAssembly(assembly));
+            }
+            assemblyDefinitionsLoaded = true;
+            return assemblyDefinitions;
         }
     }
 }

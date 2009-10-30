@@ -52,6 +52,15 @@ namespace TiviT.NCloak
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the obfuscator should encrypt strings.
+        /// </summary>
+        /// <value><c>true</c> to encrypt strings; otherwise, <c>false</c>.</value>
+        public bool EncryptStrings
+        {
+            get; set;
+        }
+
+        /// <summary>
         /// Validates the initialisation settings.
         /// </summary>
         public void Validate()

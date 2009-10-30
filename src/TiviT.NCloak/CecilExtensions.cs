@@ -1,4 +1,7 @@
-﻿using Mono.Cecil;
+﻿using System;
+using System.Linq;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
 
 namespace TiviT.NCloak
 {
@@ -40,6 +43,30 @@ namespace TiviT.NCloak
                 }
             }
             return null;
+        }
+
+        public static VariableDefinition AddLocal(this MethodDefinition methodDef, Type localType)
+        {
+            TypeReference declaringType = methodDef.DeclaringType;
+            ModuleDefinition module = declaringType.Module;
+            TypeReference variableType = module.Import(localType);
+            VariableDefinition result = new VariableDefinition(variableType);
+
+            methodDef.Body.Variables.Add(result);
+
+            return result;
+        }
+
+        public static TypeReference GetTypeReference(this MethodDefinition methodDef, Type localType)
+        {
+            TypeReference declaringType = methodDef.DeclaringType;
+            ModuleDefinition module = declaringType.Module;
+            return module.Import(localType);
+        }
+
+        public static MethodReference ImportMethod(this MethodBody body, MethodReference reference)
+        {
+            return body.Method.DeclaringType.Module.Import(reference);
         }
     }
 }

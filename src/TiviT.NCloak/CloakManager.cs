@@ -27,6 +27,16 @@ namespace TiviT.NCloak
         }
 
         /// <summary>
+        /// Registers the cloaking task in the job pipeline.
+        /// </summary>
+        /// <param name="task">The task.</param>
+        public void RegisterTask(ICloakTask task)
+        {
+            if (task == null) throw new ArgumentNullException("task");
+            cloakingTasks.Add(task);
+        }
+
+        /// <summary>
         /// Runs the clock process.
         /// </summary>
         public void Run(ICloakContext context)

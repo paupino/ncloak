@@ -30,22 +30,12 @@ namespace TiviT.NCloak.CloakTasks
             this.method = method;
             random = new Random();
 
-            AssemblyDefinition ad = AssemblyFactory.GetAssembly(RuntimeEnvironment.GetRuntimeDirectory() + "\\mscorlib.dll");
-            foreach (TypeDefinition td in ad.MainModule.Types)
-            {
-                if (td.Namespace == "System")
-                {
-                    switch (td.Name)
-                    {
-                        case "String":
-                            stringTypeReference = td.GetOriginalType();
-                            break;
-                        case "Int32":
-                            int32TypeReference = td.GetOriginalType();
-                            break;
-                    }
-                }
-            }
+            TypeDefinition sr = FrameworkHelper.Find("mscorlib.dll", "System.String");
+            TypeDefinition ir = FrameworkHelper.Find("mscorlib.dll", "System.Int32");
+            if (sr != null)
+                stringTypeReference = sr.GetOriginalType();
+            if (ir != null)
+                int32TypeReference = ir.GetOriginalType();
 
             //If we couldn't find our types we have an issue
             if (stringTypeReference == null)

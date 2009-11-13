@@ -120,10 +120,15 @@ namespace TiviT.NCloak.Console
             System.Console.WriteLine();
             System.Console.WriteLine(" {0} [/full] [/out outputLocation] assemblies", Assembly.GetExecutingAssembly().GetName().Name);
             System.Console.WriteLine();
-            System.Console.WriteLine("  /full\t\tSpecifies that all members should be included in obfuscation");
-            System.Console.WriteLine("  /out\t\tSpecifies the output location of all protected assemblies");
+            System.Console.WriteLine("  /full\t\t\tSpecifies that all members should be included in ");
+            System.Console.WriteLine("  \t\t\tobfuscation");
+            System.Console.WriteLine("  /out\t\t\tSpecifies the output location of all protected ");
+            System.Console.WriteLine("  \t\t\tassemblies");
             System.Console.WriteLine("  /strings\t\tSpecifies that the obfuscator encrypts string constants");
-            System.Console.WriteLine("  assemblies\tSpecifies the assemblies to include in the code protection tasks");
+            System.Console.WriteLine("  /supressildasm={0|1}\tSpecifieds whether to suppress disassembly to IL");
+            System.Console.WriteLine("  \t\t\tusing the ildasm.exe tool (default is on)");
+            System.Console.WriteLine("  assemblies\t\tSpecifies the assemblies to include in the code ");
+            System.Console.WriteLine("  \t\t\tprotection tasks");
             System.Console.WriteLine();
         }
 
@@ -157,6 +162,8 @@ namespace TiviT.NCloak.Console
                 manager.RegisterTask(new StringEncryptionTask(StringEncryptionMethod.Xor));
             manager.RegisterTask<MappingTask>();
             manager.RegisterTask<ObfuscationTask>();
+            if (settings.SupressIldasm)
+                manager.RegisterTask<SupressIldasmTask>();
             manager.RegisterTask<OutputAssembliesTask>();
         }
     }

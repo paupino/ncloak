@@ -58,6 +58,8 @@
     <Compile Include="CloakTasks\MappingTask.cs" />
     <Compile Include="CloakTasks\OutputAssembliesTask.cs" />
     <Compile Include="CloakTasks\StringEncryptionTask.cs" />
+    <Compile Include="CloakTasks\SupressIldasmTask.cs" />
+    <Compile Include="FrameworkHelper.cs" />
     <Compile Include="ICloakContext.cs" />
     <Compile Include="CloakTasks\ICloakTask.cs" />
     <Compile Include="InitialisationException.cs" />

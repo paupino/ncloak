@@ -17,6 +17,7 @@ namespace TiviT.NCloak
         {
             assembliesToObfuscate = new List<string>();
             validated = false;
+            SupressIldasm = true;
         }
 
         
@@ -56,6 +57,15 @@ namespace TiviT.NCloak
         /// </summary>
         /// <value><c>true</c> to encrypt strings; otherwise, <c>false</c>.</value>
         public bool EncryptStrings
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to include the SupressIldasmAttribute on the assembly
+        /// </summary>
+        /// <value><c>true</c> to include the attribute; otherwise, <c>false</c>.</value>
+        public bool SupressIldasm
         {
             get; set;
         }

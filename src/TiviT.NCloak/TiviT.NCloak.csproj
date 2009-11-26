@@ -55,6 +55,7 @@
     <Compile Include="CloakContext.cs" />
     <Compile Include="CloakException.cs" />
     <Compile Include="CloakManager.cs" />
+    <Compile Include="CloakTasks\ConfuseReflectorTask.cs" />
     <Compile Include="CloakTasks\MappingTask.cs" />
     <Compile Include="CloakTasks\OutputAssembliesTask.cs" />
     <Compile Include="CloakTasks\StringEncryptionTask.cs" />

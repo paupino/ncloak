@@ -105,7 +105,7 @@ namespace TiviT.NCloak.CloakTasks
                     foreach (MethodDefinition methodDefinition in typeDefinition.Methods)
                     {
                         if (methodDefinition.HasBody)
-                            ProcessInstructions(methodDefinition.Body, decryptionMethod);
+                            ProcessInstructions(definition, methodDefinition.Body, decryptionMethod);
                     }
                 }
             }
@@ -227,9 +227,10 @@ namespace TiviT.NCloak.CloakTasks
         /// <summary>
         /// Processes the instructions replacing all strings being loaded with an encrypted version.
         /// </summary>
+        /// <param name="assemblyDef">The assembly definition.</param>
         /// <param name="body">The body.</param>
         /// <param name="decryptMethod">The decrypt method.</param>
-        private void ProcessInstructions(MethodBody body, MethodReference decryptMethod)
+        private void ProcessInstructions(AssemblyDefinition assemblyDef, MethodBody body, MethodReference decryptMethod)
         {
             InstructionCollection instructions = body.Instructions;
             CilWorker il = body.CilWorker;
@@ -298,7 +299,7 @@ namespace TiviT.NCloak.CloakTasks
                 foreach (int movedOffsets in offsets)
                 {
                     if (originalOffset > movedOffsets)
-                        offset += 10;
+                        offset += (6 + assemblyDef.GetAddressSize()); //1 byte ldc.i4 operand, 4 bytes for i4, 1 byte call statement + address size
                 }
                 target.Offset = offset;
                 Instruction newInstr = il.Create(instruction.OpCode, target);
@@ -315,7 +316,7 @@ namespace TiviT.NCloak.CloakTasks
                 foreach (int movedOffsets in offsets)
                 {
                     if (originalOffset > movedOffsets)
-                        offset += 10;
+                        offset += (6 + assemblyDef.GetAddressSize()); //1 byte ldc.i4 operand, 4 bytes for i4, 1 byte call statement + address size
                 }
                 target.Offset = offset;
             }

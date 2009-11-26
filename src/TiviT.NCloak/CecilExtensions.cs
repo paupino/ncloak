@@ -68,5 +68,25 @@ namespace TiviT.NCloak
         {
             return body.Method.DeclaringType.Module.Import(reference);
         }
+
+        public static int GetAddressSize(this AssemblyDefinition assemblyDefinition)
+        {
+            if (Is64BitAssembly(assemblyDefinition))
+                return 8;
+            return 4;
+        }
+
+        public static bool Is64BitAssembly(this AssemblyDefinition assemblyDefinition)
+        {
+            if (assemblyDefinition == null) throw new ArgumentNullException("assemblyDefinition");
+            switch (assemblyDefinition.MainModule.Image.DebugHeader.Magic)
+            {
+                case 0x10b:
+                default:
+                    return false;
+                case 0x20b:
+                    return true;
+            }
+        }
     }
 }

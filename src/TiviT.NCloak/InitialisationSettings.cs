@@ -71,6 +71,15 @@ namespace TiviT.NCloak
         }
 
         /// <summary>
+        /// Gets or sets the method used to confuse decompilation tools.
+        /// </summary>
+        /// <value>The method used to confuse decompilation tools.</value>
+        public ConfusionMethod ConfuseDecompilationMethod
+        {
+            get; set;
+        }
+
+        /// <summary>
         /// Validates the initialisation settings.
         /// </summary>
         public void Validate()

@@ -46,8 +46,17 @@ namespace TiviT.NCloak.Console
             {
                 if (args[i].StartsWith("-") || args[i].StartsWith("/"))
                 {
+                    string argKey = args[i].Substring(1);
+                    string argValue = null;
+                    if (argKey.Contains("="))
+                    {
+                        int index = argKey.IndexOf('=');
+                        if (argKey.Length > index + 1)
+                            argValue = argKey.Substring(index + 1);
+                        argKey = argKey.Substring(0, index);
+                    }
                     //Standard argument
-                    switch (args[i].Substring(1))
+                    switch (argKey)
                     {
                         case "out":
                             //Set the output directory
@@ -64,6 +73,27 @@ namespace TiviT.NCloak.Console
 
                         case "strings":
                             settings.EncryptStrings = true;
+                            break;
+
+                        case "suppressildasm":
+                            switch (argValue)
+                            {
+                                case "0":
+                                    settings.SupressIldasm = false;
+                                    break;
+                                case "1":
+                                    settings.SupressIldasm = true;
+                                    break;
+                                default:
+                                    DisplayError("Unrecognized suppress ildasm switch");
+                                    break;
+                            }
+                            
+                            break;
+
+                        case "stopdecomp":
+                        case "sd":
+                            settings.ConfuseDecompilationMethod = ConfusionMethod.InvalidIl;
                             break;
 
                         case "?":
@@ -125,7 +155,9 @@ namespace TiviT.NCloak.Console
             System.Console.WriteLine("  /out\t\t\tSpecifies the output location of all protected ");
             System.Console.WriteLine("  \t\t\tassemblies");
             System.Console.WriteLine("  /strings\t\tSpecifies that the obfuscator encrypts string constants");
-            System.Console.WriteLine("  /supressildasm={0|1}\tSpecifieds whether to suppress disassembly to IL");
+            System.Console.WriteLine("  /stopdecomp (/sd)\tIf specified, the obfuscator attempts to stop ");
+            System.Console.WriteLine("  \t\t\tdecompilation using various techniques");
+            System.Console.WriteLine("  /suppressildasm={0|1}\tSpecifieds whether to suppress disassembly to IL");
             System.Console.WriteLine("  \t\t\tusing the ildasm.exe tool (default is on)");
             System.Console.WriteLine("  assemblies\t\tSpecifies the assemblies to include in the code ");
             System.Console.WriteLine("  \t\t\tprotection tasks");
@@ -164,6 +196,9 @@ namespace TiviT.NCloak.Console
             manager.RegisterTask<ObfuscationTask>();
             if (settings.SupressIldasm)
                 manager.RegisterTask<SupressIldasmTask>();
+            if (settings.ConfuseDecompilationMethod != ConfusionMethod.None)
+                manager.RegisterTask(new ConfuseDecompilationTask(ConfusionMethod.InvalidIl));
+            //Always last
             manager.RegisterTask<OutputAssembliesTask>();
         }
     }

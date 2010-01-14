@@ -46,7 +46,12 @@ namespace TiviT.NCloak
 
             //Run through each of our tasks
             foreach (ICloakTask task in cloakingTasks)
+            {
+#if DEBUG
+                Console.WriteLine("==== Executing task: {0} ====", task.GetType().FullName);
+#endif
                 task.RunTask(context);
+            }
         }
     }
 }

@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace TiviT.NCloak
 {
     public class InitialisationSettings
     {
         private readonly List<string> assembliesToObfuscate;
+        private string tamperProofAssemblyName;
         private bool validated;
 
         /// <summary>
@@ -75,6 +77,35 @@ namespace TiviT.NCloak
         /// </summary>
         /// <value>The method used to confuse decompilation tools.</value>
         public ConfusionMethod ConfuseDecompilationMethod
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Gets or sets the name of the tamper proof assembly. Please note, this
+        /// is the .NET friendly name
+        /// </summary>
+        /// <value>The name of the tamper proof assembly.</value>
+        public string TamperProofAssemblyName
+        {
+            get { return tamperProofAssemblyName; }
+            set
+            {
+                //Validate it
+                if (String.IsNullOrEmpty(value))
+                    tamperProofAssemblyName = null;
+                else if (Regex.IsMatch(value, "[A-Za-z][_A-Za-z0-9]*"))
+                    tamperProofAssemblyName = value;
+                else
+                    throw new FormatException("Assembly name must be a valid .NET friendly type name ([A-Za-z][_A-Za-z0-9]*)");
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the type of the tamper proof assembly.
+        /// </summary>
+        /// <value>The type of the tamper proof assembly.</value>
+        public AssemblyType TamperProofAssemblyType
         {
             get; set;
         }

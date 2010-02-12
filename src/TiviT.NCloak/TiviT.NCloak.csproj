@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyType.cs" />
     <Compile Include="AttributeExtensions.cs" />
     <Compile Include="CecilExtensions.cs" />
     <Compile Include="CharacterSet.cs" />
@@ -60,6 +61,7 @@
     <Compile Include="CloakTasks\OutputAssembliesTask.cs" />
     <Compile Include="CloakTasks\StringEncryptionTask.cs" />
     <Compile Include="CloakTasks\SupressIldasmTask.cs" />
+    <Compile Include="CloakTasks\TamperProofTask.cs" />
     <Compile Include="ConfusionMethod.cs" />
     <Compile Include="FrameworkHelper.cs" />
     <Compile Include="ICloakContext.cs" />

@@ -96,6 +96,41 @@ namespace TiviT.NCloak.Console
                             settings.ConfuseDecompilationMethod = ConfusionMethod.InvalidIl;
                             break;
 
+                        case "tamperproof":
+                            //Set the output directory
+                            if (i + 1 < args.Length)
+                            {
+                                try
+                                {
+                                    settings.TamperProofAssemblyName = args[++i];
+                                }
+                                catch (FormatException)
+                                {
+                                    DisplayError("The tamperproof parameter must be a valid .NET name");
+                                }
+                            }
+                            else
+                                DisplayError("Unrecognised number of arguments for tamperproof parameter");
+                            break;
+
+                        case "bootstrappertype":
+                            if (String.IsNullOrEmpty(argValue))
+                                DisplayError("Bootstrapper type must be either windows or console (default)");
+                            else
+                                switch (argValue.ToLower())
+                                {
+                                    case "windows":
+                                        settings.TamperProofAssemblyType = AssemblyType.Windows;
+                                        break;
+                                    case "console":
+                                        settings.TamperProofAssemblyType = AssemblyType.Console;
+                                        break;
+                                    default:
+                                        DisplayError("Bootstrapper type must be either windows or console (default)");
+                                        break;
+                                }
+                            break;
+
                         case "?":
                         case "help":
                             DisplayUsage();
@@ -199,7 +234,10 @@ namespace TiviT.NCloak.Console
             if (settings.ConfuseDecompilationMethod != ConfusionMethod.None)
                 manager.RegisterTask(new ConfuseDecompilationTask(ConfusionMethod.InvalidIl));
             //Always last
-            manager.RegisterTask<OutputAssembliesTask>();
+            if (String.IsNullOrEmpty(settings.TamperProofAssemblyName))
+                manager.RegisterTask<OutputAssembliesTask>(); //Default
+            else
+                manager.RegisterTask<TamperProofTask>(); //Tamper proofing combines all assemblies into one
         }
     }
 }

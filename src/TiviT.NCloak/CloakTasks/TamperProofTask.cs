@@ -1,5 +1,5 @@
 ﻿#if DEBUG
-#define USE_FRIENDLY_NAMING
+//#define USE_FRIENDLY_NAMING
 //#define VERBOSE_OUTPUT
 #endif
 #define USE_APPDOMAIN
@@ -113,7 +113,7 @@ namespace TiviT.NCloak.CloakTasks
             }
 
             //Now make it do something
-            BuildBootstrapper(context, bootstrapperAssembly, passwordKey, salt, resourceNamespace);
+            BuildBootstrapper(context, bootstrapperAssembly, passwordKey, salt);
 
             //Finally save this assembly to our output path
             string outputPath = Path.Combine(context.Settings.OutputDirectory, context.Settings.TamperProofAssemblyName + ".exe");
@@ -128,7 +128,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="assembly">The assembly.</param>
         /// <param name="passwordKey">The password key.</param>
         /// <param name="salt">The salt.</param>
-        private void BuildBootstrapper(ICloakContext context, AssemblyDefinition assembly, string passwordKey, Guid salt, string resourceNamespace)
+        private static void BuildBootstrapper(ICloakContext context, AssemblyDefinition assembly, string passwordKey, Guid salt)
         {
             //See http://blog.paul-mason.co.nz/2010/02/tamper-proofing-implementation-part-2.html
 
@@ -234,8 +234,7 @@ namespace TiviT.NCloak.CloakTasks
             var ctor = assembly.CreateDefaultConstructor(entryType);
             ctor.MaxStack = 8;
             var il = ctor.CilWorker;
-            InjectAntiReflectorCode(il);
-            il.Append(OpCodes.Ldarg_0);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Ldarg_0));
             var objectCtor = assembly.Import(typeof (object).GetConstructor(Type.EmptyTypes));
             il.Append(il.Create(OpCodes.Call, objectCtor));
             il.Append(OpCodes.Ret);
@@ -253,7 +252,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="executingAssembly">The executing assembly.</param>
         /// <param name="loadAssembly">The load assembly.</param>
         /// <returns></returns>
-        private MethodDefinition BuildLoadAssembliesMethod(ICloakContext context, AssemblyDefinition assembly, FieldReference executingAssembly, MethodReference loadAssembly)
+        private static MethodDefinition BuildLoadAssembliesMethod(ICloakContext context, AssemblyDefinition assembly, FieldReference executingAssembly, MethodReference loadAssembly)
         {
 #if USE_FRIENDLY_NAMING
             MethodDefinition method = new MethodDefinition("LoadAssemblies",
@@ -271,8 +270,7 @@ namespace TiviT.NCloak.CloakTasks
 
             //Build the body
             var il = method.Body.CilWorker;
-            InjectAntiReflectorCode(il);
-            il.Append(OpCodes.Nop);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
             il.Append(OpCodes.Nop);
             il.Append(OpCodes.Ldarg_0);
             il.Append(il.Create(OpCodes.Ldfld, executingAssembly));
@@ -364,7 +362,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="passwordKey">The password key.</param>
         /// <param name="salt">The salt.</param>
         /// <returns></returns>
-        private MethodDefinition BuildLoadAssemblyMethod(ICloakContext context, AssemblyDefinition assembly, FieldReference loadedAssemblies, FieldReference executingAssembly, MethodReference decryptData, MethodReference hashData, string passwordKey, Guid salt)
+        private static MethodDefinition BuildLoadAssemblyMethod(ICloakContext context, AssemblyDefinition assembly, FieldReference loadedAssemblies, FieldReference executingAssembly, MethodReference decryptData, MethodReference hashData, string passwordKey, Guid salt)
         {
 #if USE_FRIENDLY_NAMING
             MethodDefinition method = new MethodDefinition("LoadAssembly",
@@ -393,14 +391,12 @@ namespace TiviT.NCloak.CloakTasks
 
             //Build the body
             var il = method.Body.CilWorker;
-            InjectAntiReflectorCode(il);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
 
 #if VERBOSE_OUTPUT
             DebugLine(assembly, il, "Loading ", il.Create(OpCodes.Ldarg_1));
 #endif
 
-            //Start the code
-            il.Append(OpCodes.Nop);
             //Check the cache first
             il.Append(OpCodes.Ldarg_0);
             il.Append(il.Create(OpCodes.Ldfld, loadedAssemblies));
@@ -693,7 +689,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="assembly">The assembly.</param>
         /// <param name="loadAssembly">The load assembly.</param>
         /// <returns></returns>
-        private MethodDefinition BuildLoadTypeMethod(ICloakContext context, AssemblyDefinition assembly, MethodReference loadAssembly)
+        private static MethodDefinition BuildLoadTypeMethod(ICloakContext context, AssemblyDefinition assembly, MethodReference loadAssembly)
         {
 #if USE_FRIENDLY_NAMING
             MethodDefinition method = new MethodDefinition("LoadType",
@@ -715,10 +711,9 @@ namespace TiviT.NCloak.CloakTasks
 
             //Start with injection
             var il = method.Body.CilWorker;
-            InjectAntiReflectorCode(il);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
 
             //Start the code
-            il.Append(OpCodes.Nop);
             il.Append(OpCodes.Ldarg_0);
             il.Append(OpCodes.Ldarg_1);
             il.Append(il.Create(OpCodes.Call, loadAssembly));
@@ -759,7 +754,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="context">The context.</param>
         /// <param name="assembly">The assembly.</param>
         /// <returns></returns>
-        private MethodDefinition BuildHashMethod(ICloakContext context, AssemblyDefinition assembly)
+        private static MethodDefinition BuildHashMethod(ICloakContext context, AssemblyDefinition assembly)
         {
 #if USE_FRIENDLY_NAMING
             MethodDefinition method = new MethodDefinition("Hash",
@@ -780,8 +775,7 @@ namespace TiviT.NCloak.CloakTasks
             var il = method.Body.CilWorker;
 
             //Inject some anti reflector stuff
-            InjectAntiReflectorCode(il);
-            il.Append(OpCodes.Nop);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
 
             //Create the SHA256 object
             var sha256Create = typeof(SHA256).GetMethod("Create", Type.EmptyTypes);
@@ -809,7 +803,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="context">The context.</param>
         /// <param name="assembly">The assembly.</param>
         /// <returns></returns>
-        private MethodDefinition BuildDecryptMethod(ICloakContext context, AssemblyDefinition assembly)
+        private static MethodDefinition BuildDecryptMethod(ICloakContext context, AssemblyDefinition assembly)
         {
             var byteArrayType = assembly.Import(typeof (byte[]));
 #if USE_FRIENDLY_NAMING
@@ -842,10 +836,9 @@ namespace TiviT.NCloak.CloakTasks
             var il = method.Body.CilWorker;
 
             //Inject anti reflector code
-            InjectAntiReflectorCode(il);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
 
             //Start the body
-            il.Append(OpCodes.Nop);
             var rijndaelCreate = typeof(Rijndael).GetMethod("Create", Type.EmptyTypes);
             il.Append(il.Create(OpCodes.Call, assembly.Import(rijndaelCreate)));
             il.Append(OpCodes.Stloc_0);
@@ -1010,7 +1003,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="assembliesLoaded">The assemblies loaded.</param>
         /// <param name="loadAssemblies">The load assemblies.</param>
         /// <returns></returns>
-        private MethodDefinition BuildResolveMethod(ICloakContext context, AssemblyDefinition assembly, FieldReference assemblyLock, FieldReference assembliesLoaded, MethodReference loadAssemblies)
+        private static MethodDefinition BuildResolveMethod(ICloakContext context, AssemblyDefinition assembly, FieldReference assemblyLock, FieldReference assembliesLoaded, MethodReference loadAssemblies)
         {
 #if USE_FRIENDLY_NAMING
             MethodDefinition method = new MethodDefinition("ResolveAssembly",
@@ -1038,13 +1031,11 @@ namespace TiviT.NCloak.CloakTasks
             var il = method.Body.CilWorker;
 
             //Inject the anti reflector code
-            InjectAntiReflectorCode(il);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
 #if VERBOSE_OUTPUT
             DebugLine(assembly, il, "Resolving");
 #endif
 
-            //Start it off
-            il.Append(OpCodes.Nop);
             //Start a lock
             il.Append(OpCodes.Ldarg_0);
             il.Append(il.Create(OpCodes.Ldfld, assemblyLock));
@@ -1175,10 +1166,11 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="context">The context.</param>
         /// <param name="assembly">The assembly.</param>
         /// <param name="executingAssembly">The executing assembly.</param>
+        /// <param name="assembliesLoaded">The assemblies loaded.</param>
         /// <param name="loadType">Type of the load.</param>
         /// <param name="loadAssemblies">The load assemblies.</param>
         /// <returns></returns>
-        private MethodDefinition BuildStartMethod(ICloakContext context, AssemblyDefinition assembly, FieldReference executingAssembly, FieldReference assembliesLoaded, MethodReference loadType, MethodReference loadAssemblies)
+        private static MethodDefinition BuildStartMethod(ICloakContext context, AssemblyDefinition assembly, FieldReference executingAssembly, FieldReference assembliesLoaded, MethodReference loadType, MethodReference loadAssemblies)
         {
 #if USE_FRIENDLY_NAMING
             MethodDefinition method = new MethodDefinition("Start",
@@ -1206,10 +1198,9 @@ namespace TiviT.NCloak.CloakTasks
             var il = method.Body.CilWorker;
 
             //Inject the anti reflector code
-            InjectAntiReflectorCode(il);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
 
             //Start it off - declare some variables
-            il.Append(OpCodes.Nop);
             il.Append(OpCodes.Ldnull);
             il.Append(OpCodes.Stloc_0);
             il.Append(OpCodes.Ldnull);
@@ -1500,7 +1491,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="assemblyResolve">The assembly resolve.</param>
         /// <param name="getExecutingAssembly">The get executing assembly.</param>
         /// <param name="resolveMethod">The resolve method.</param>
-        private void BuildProgramConstructor(AssemblyDefinition assembly, TypeDefinition programType, FieldReference assemblyLock, FieldReference executingAssembly, FieldReference loadedAssemblies, MethodReference currentDomain, MethodReference eventHandler, MethodReference assemblyResolve, MethodReference getExecutingAssembly, MethodReference resolveMethod)
+        private static void BuildProgramConstructor(AssemblyDefinition assembly, TypeDefinition programType, FieldReference assemblyLock, FieldReference executingAssembly, FieldReference loadedAssemblies, MethodReference currentDomain, MethodReference eventHandler, MethodReference assemblyResolve, MethodReference getExecutingAssembly, MethodReference resolveMethod)
         {
             var body = assembly.CreateDefaultConstructor(programType);
             body.MaxStack = 4;
@@ -1509,10 +1500,9 @@ namespace TiviT.NCloak.CloakTasks
             var il = body.CilWorker;
 
             //Inject anti reflector code
-            InjectAntiReflectorCode(il);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Ldarg_0));
 
             //define the assembly lock
-            il.Append(OpCodes.Ldarg_0);
             var objConstructor = assembly.Import(typeof(object).GetConstructor(Type.EmptyTypes));
             il.Append(il.Create(OpCodes.Newobj, objConstructor));
             il.Append(il.Create(OpCodes.Stfld, assemblyLock));
@@ -1552,7 +1542,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="resolveMethod">The resolve method.</param>
         /// <param name="startMethod">The start method.</param>
         /// <returns></returns>
-        private MethodDefinition BuildMainMethod(AssemblyDefinition assembly, ICloakContext context, TypeDefinition programType, MethodReference getExecutingAssembly, MethodReference currentDomain, MethodReference eventHandler, MethodReference assemblyResolve, MethodReference resolveMethod, MethodReference startMethod)
+        private static MethodDefinition BuildMainMethod(AssemblyDefinition assembly, ICloakContext context, TypeDefinition programType, MethodReference getExecutingAssembly, MethodReference currentDomain, MethodReference eventHandler, MethodReference assemblyResolve, MethodReference resolveMethod, MethodReference startMethod)
         {
 #if USE_FRIENDLY_NAMING
             MethodDefinition entryPoint =
@@ -1583,7 +1573,7 @@ namespace TiviT.NCloak.CloakTasks
             CilWorker il = entryPoint.Body.CilWorker;
 
             //First of all add the anti reflector code
-            InjectAntiReflectorCode(il);
+            InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
 
             //Now output the code - essentially:
             /*
@@ -1593,7 +1583,6 @@ namespace TiviT.NCloak.CloakTasks
             AppDomain.CurrentDomain.AssemblyResolve += runner.ResolveAssembly;
             runner.Start();
              */
-            il.Append(OpCodes.Nop);
 #if USE_APPDOMAIN
 #if USE_FRIENDLY_NAMING
             il.Append(il.Create(OpCodes.Ldstr, "AppDomainName"));
@@ -1657,9 +1646,13 @@ namespace TiviT.NCloak.CloakTasks
         /// Injects the anti reflector code.
         /// </summary>
         /// <param name="il">The il builder.</param>
-        private void InjectAntiReflectorCode(CilWorker il)
+        /// <param name="first">The first instruction to use.</param>
+        private static void InjectAntiReflectorCode(CilWorker il, Instruction first)
         {
-
+            il.Append(il.Create(OpCodes.Br_S, first));
+            il.Append(ConfuseDecompilationTask.CreateInvalidOpCode());
+            il.Append(ConfuseDecompilationTask.CreateInvalidOpCode());
+            il.Append(first);
         }
 
         /// <summary>

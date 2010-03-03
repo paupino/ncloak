@@ -132,7 +132,7 @@ namespace TiviT.NCloak.CloakTasks
 
         }
 
-        private static OpCode CreateInvalidOpCode()
+        internal static OpCode CreateInvalidOpCode()
         {
             //We create an opcode using a pretty dodgy method...
             byte op2;

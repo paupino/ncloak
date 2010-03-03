@@ -59,6 +59,16 @@ namespace TiviT.NCloak
             return result;
         }
 
+        public static VariableDefinition AddLocal(this MethodDefinition methodDef, AssemblyDefinition assembly, Type localType)
+        {
+            TypeReference variableType = assembly.MainModule.Import(localType);
+            VariableDefinition result = new VariableDefinition(variableType);
+
+            methodDef.Body.Variables.Add(result);
+
+            return result;
+        }
+
         public static TypeReference GetTypeReference(this MethodDefinition methodDef, Type localType)
         {
             TypeReference declaringType = methodDef.DeclaringType;

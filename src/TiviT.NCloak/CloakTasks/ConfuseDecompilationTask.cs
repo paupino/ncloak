@@ -120,6 +120,19 @@ namespace TiviT.NCloak.CloakTasks
                     Instruction newInstr = il.Create(instructions[i].OpCode, target);
                     il.Replace(instructions[i], newInstr);
                 }
+                else if (instructions[i].Operand is Instruction[]) //e.g. Switch statements
+                {
+                    //We need to find the target as it may have changed
+                    Instruction[] targets = (Instruction[])instructions[i].Operand;
+                    foreach (Instruction target in targets)
+                    {
+                        //Work out the new offset
+                        int offset = target.Offset + 4; //br.s opcode + invalid opcode
+                        target.Offset = offset;
+                    }
+                    Instruction newInstr = il.Create(instructions[i].OpCode, targets);
+                    il.Replace(instructions[i], newInstr);
+                }
             }
 
             //If there is a try adjust the starting point also

@@ -90,7 +90,7 @@ namespace SimpleLibrary
                     args = null;
                 }
                 //Execute the command
-                ExecuteCommand(command, args == null ? null : args.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries));
+                ExecuteCommand(command, args == null ? new string[0] : args.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries));
             }
         }
 

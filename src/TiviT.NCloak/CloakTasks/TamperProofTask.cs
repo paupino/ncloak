@@ -1,6 +1,7 @@
 ﻿#if DEBUG
 //#define USE_FRIENDLY_NAMING
 //#define VERBOSE_OUTPUT
+#define OUTPUT_PRE_TAMPER
 #endif
 #define USE_APPDOMAIN
 using System;
@@ -60,6 +61,9 @@ namespace TiviT.NCloak.CloakTasks
                 //Get the raw data of the assembly
                 byte[] assemblyRawData;
                 AssemblyFactory.SaveAssembly(assemblies[assembly], out assemblyRawData);
+#if OUTPUT_PRE_TAMPER
+                File.WriteAllBytes(context.Settings.OutputDirectory + "\\" + Path.GetFileName(assembly), assemblyRawData);
+#endif
 
                 //Calculate the hash
                 hashedAssemblies.Add(assembly, HashData(assemblyRawData));

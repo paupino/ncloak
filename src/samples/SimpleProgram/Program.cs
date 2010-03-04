@@ -20,6 +20,7 @@ namespace SimpleProgram
             //Register commands and start
             service.RegisterCommand<QuitCommand>();
             service.RegisterCommand<SayHelloCommand>();
+            service.RegisterCommand<TestCommand>();
             service.Start();
 
             //Display the "IsRunning" property - for no reason other than to prove property access is the same

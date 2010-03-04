@@ -97,7 +97,7 @@ namespace TiviT.NCloak.Console
                             break;
 
                         case "tamperproof":
-                            //Set the output directory
+                            //Set the tamper proof name
                             if (i + 1 < args.Length)
                             {
                                 try

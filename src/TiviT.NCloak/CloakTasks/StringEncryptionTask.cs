@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using System.Runtime.InteropServices;
 
 namespace TiviT.NCloak.CloakTasks
 {
@@ -10,8 +9,6 @@ namespace TiviT.NCloak.CloakTasks
     {
         private readonly StringEncryptionMethod method;
         private readonly Random random;
-        private readonly TypeReference stringTypeReference;
-        private readonly TypeReference int32TypeReference;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StringEncryptionTask"/> class.
@@ -29,19 +26,6 @@ namespace TiviT.NCloak.CloakTasks
         {
             this.method = method;
             random = new Random();
-
-            TypeDefinition sr = FrameworkHelper.Find("mscorlib.dll", "System.String");
-            TypeDefinition ir = FrameworkHelper.Find("mscorlib.dll", "System.Int32");
-            if (sr != null)
-                stringTypeReference = sr.GetOriginalType();
-            if (ir != null)
-                int32TypeReference = ir.GetOriginalType();
-
-            //If we couldn't find our types we have an issue
-            if (stringTypeReference == null)
-                throw new TypeNotFoundException("System.String");
-            if (int32TypeReference == null)
-                throw new TypeNotFoundException("System.Int32");
         }
 
         /// <summary>
@@ -72,11 +56,11 @@ namespace TiviT.NCloak.CloakTasks
             foreach (TypeDefinition td in definition.MainModule.Types)
                 if (td.Name == "<Module>")
                 {
-                    MethodDefinition md = new MethodDefinition("Decrypt", MethodAttributes.HideBySig | MethodAttributes.Static | MethodAttributes.Compilercontrolled, stringTypeReference);
+                    MethodDefinition md = new MethodDefinition("Decrypt", MethodAttributes.HideBySig | MethodAttributes.Static | MethodAttributes.Compilercontrolled, definition.Import(typeof(string)));
 
                     //Generate the parameters
-                    md.Parameters.Add(new ParameterDefinition("v", 0, ParameterAttributes.None, stringTypeReference));
-                    md.Parameters.Add(new ParameterDefinition("s", 1, ParameterAttributes.None, int32TypeReference));
+                    md.Parameters.Add(new ParameterDefinition("v", 0, ParameterAttributes.None, definition.Import(typeof(string))));
+                    md.Parameters.Add(new ParameterDefinition("s", 1, ParameterAttributes.None, definition.Import(typeof(int))));
 
                     //Add it
                     td.Methods.Add(md);
@@ -85,7 +69,7 @@ namespace TiviT.NCloak.CloakTasks
                     switch (method)
                     {
                         case StringEncryptionMethod.Xor:
-                            GenerateXorDecryptionMethod(md.Body);
+                            GenerateXorDecryptionMethod(definition, md.Body);
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -114,8 +98,9 @@ namespace TiviT.NCloak.CloakTasks
         /// <summary>
         /// Generates the xor decryption method.
         /// </summary>
+        /// <param name="assembly">The assembly.</param>
         /// <param name="body">The body.</param>
-        private void GenerateXorDecryptionMethod(MethodBody body)
+        private static void GenerateXorDecryptionMethod(AssemblyDefinition assembly, MethodBody body)
         {
             CilWorker worker = body.CilWorker;
 
@@ -147,12 +132,7 @@ namespace TiviT.NCloak.CloakTasks
             worker.Append(ldArg0);
 
             //Call ToCharArray on this -- need to find it first
-            MethodReference toCharArrayMethodRef = null;
-            foreach (MethodDefinition def in stringTypeReference.GetTypeDefinition().Methods)
-                if (def.Name == "ToCharArray" && def.Parameters.Count == 0)
-                    toCharArrayMethodRef = def.GetOriginalMethod();
-            if (toCharArrayMethodRef == null)
-                throw new MemberNotFoundException("String.ToCharArray");
+            var toCharArrayMethodRef = assembly.Import(typeof(string).GetMethod("ToCharArray", Type.EmptyTypes));
             //Import the method first
             toCharArrayMethodRef = body.ImportMethod(toCharArrayMethodRef);
             Instruction toCharArray = worker.Create(OpCodes.Callvirt, toCharArrayMethodRef);
@@ -199,21 +179,8 @@ namespace TiviT.NCloak.CloakTasks
 
             //Return a new string
             worker.Append(worker.Create(OpCodes.Ldloc_0));
-            ConstructorCollection coll = stringTypeReference.GetTypeDefinition().Constructors;
             //Find the constructor we want to use
-            MethodReference constructor = null;
-            foreach (MethodDefinition c in coll)
-            {
-                if (c.Parameters.Count != 1)
-                    continue;
-                if (c.Parameters[0].ParameterType.FullName == "System.Char[]")
-                {
-                    constructor = c.GetOriginalMethod();
-                    break;
-                }
-            }
-            if (constructor == null)
-                throw new MemberNotFoundException("String.ctor(char[])");
+            MethodReference constructor = assembly.Import(typeof(string).GetConstructor(new [] { typeof(char[])}));
             constructor = body.ImportMethod(constructor);
             worker.Append(worker.Create(OpCodes.Newobj, constructor));
             Instruction stloc2 = worker.Create(OpCodes.Stloc_2);
@@ -249,7 +216,7 @@ namespace TiviT.NCloak.CloakTasks
                             instructionsToExpand.Add(instruction);
                         break;
                 }
-                if (instruction.Operand is Instruction)
+                if (instruction.Operand is Instruction || instruction.Operand is Instruction[])
                 {
                     //Need to fix these
                     instructionsToFix.Add(instruction);
@@ -292,18 +259,54 @@ namespace TiviT.NCloak.CloakTasks
             foreach (Instruction instruction in instructionsToFix)
             {
                 //We need to find the target as it may have changed
-                Instruction target = (Instruction) instruction.Operand;
-                //Work out the new offset
-                int originalOffset = target.Offset;
-                int offset = target.Offset;
-                foreach (int movedOffsets in offsets)
+                if (instruction.Operand is Instruction)
                 {
-                    if (originalOffset > movedOffsets)
-                        offset += (6 + assemblyDef.GetAddressSize()); //1 byte ldc.i4 operand, 4 bytes for i4, 1 byte call statement + address size
+                    Instruction target = (Instruction) instruction.Operand;
+                    //Work out the new offset
+                    int originalOffset = target.Offset;
+                    int offset = target.Offset;
+                    foreach (int movedOffsets in offsets)
+                    {
+                        if (originalOffset > movedOffsets)
+                            offset += (6 + assemblyDef.GetAddressSize());
+                                //1 byte ldc.i4 operand, 4 bytes for i4, 1 byte call statement + address size
+                    }
+                    target.Offset = offset;
+                    OpCode opCode = instruction.OpCode;
+                    ////---
+                    //if (offset > 0x7f)
+                    //{
+                    //    //May need to convert from short form to long form
+                    //    switch (opCode.Code)
+                    //    {
+                    //        case Code.Br_S:
+                    //            opCode = OpCodes.Br;
+                    //            break;
+                    //    }
+                    //}
+                    ////---
+                    Instruction newInstr = il.Create(opCode, target);
+                    il.Replace(instruction, newInstr);
                 }
-                target.Offset = offset;
-                Instruction newInstr = il.Create(instruction.OpCode, target);
-                il.Replace(instruction, newInstr);
+                else if (instruction.Operand is Instruction[]) //e.g. Switch statements
+                {
+                    Instruction[] targets = (Instruction[])instruction.Operand;
+                    foreach (Instruction target in targets)
+                    {
+                        //Work out the new offset
+                        int originalOffset = target.Offset;
+                        int offset = target.Offset;
+                        foreach (int movedOffsets in offsets)
+                        {
+                            if (originalOffset > movedOffsets)
+                                offset += (6 + assemblyDef.GetAddressSize());
+                            //1 byte ldc.i4 operand, 4 bytes for i4, 1 byte call statement + address size
+                        }
+                        target.Offset = offset;
+                    }
+                    Instruction newInstr = il.Create(instruction.OpCode, targets);
+                    il.Replace(instruction, newInstr);
+                }
             }
 
             //If there is a try adjust the starting point also

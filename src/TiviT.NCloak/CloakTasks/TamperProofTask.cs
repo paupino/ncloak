@@ -1,7 +1,7 @@
 ﻿#if DEBUG
 //#define USE_FRIENDLY_NAMING
 //#define VERBOSE_OUTPUT
-#define OUTPUT_PRE_TAMPER
+//#define OUTPUT_PRE_TAMPER
 #endif
 #define USE_APPDOMAIN
 using System;

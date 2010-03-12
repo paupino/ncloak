@@ -111,6 +111,15 @@ namespace TiviT.NCloak
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether rename is switched OFF.
+        /// </summary>
+        /// <value><c>true</c> if rename switched OFF; otherwise, <c>false</c>.</value>
+        public bool NoRename
+        {
+            get; set;
+        }
+
+        /// <summary>
         /// Validates the initialisation settings.
         /// </summary>
         public void Validate()

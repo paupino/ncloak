@@ -71,6 +71,11 @@ namespace TiviT.NCloak.Console
                             settings.ObfuscateAllModifiers = true;
                             break;
 
+                        case "norename":
+                            //Used for debugging purposes
+                            settings.NoRename = true;
+                            break;
+
                         case "strings":
                             settings.EncryptStrings = true;
                             break;
@@ -91,8 +96,7 @@ namespace TiviT.NCloak.Console
                             
                             break;
 
-                        case "stopdecomp":
-                        case "sd":
+                        case "confuse":
                             settings.ConfuseDecompilationMethod = ConfusionMethod.InvalidIl;
                             break;
 
@@ -114,6 +118,7 @@ namespace TiviT.NCloak.Console
                             break;
 
                         case "bootstrappertype":
+                        case "bootstraptype":
                             if (String.IsNullOrEmpty(argValue))
                                 DisplayError("Bootstrapper type must be either windows or console (default)");
                             else
@@ -183,17 +188,32 @@ namespace TiviT.NCloak.Console
             System.Console.WriteLine();
             System.Console.WriteLine("Usage:");
             System.Console.WriteLine();
-            System.Console.WriteLine(" {0} [/full] [/out outputLocation] assemblies", Assembly.GetExecutingAssembly().GetName().Name);
+            System.Console.WriteLine(" {0} [options] assemblies", Assembly.GetExecutingAssembly().GetName().Name);
             System.Console.WriteLine();
             System.Console.WriteLine("  /full\t\t\tSpecifies that all members should be included in ");
             System.Console.WriteLine("  \t\t\tobfuscation");
+
             System.Console.WriteLine("  /out\t\t\tSpecifies the output location of all protected ");
             System.Console.WriteLine("  \t\t\tassemblies");
+            
             System.Console.WriteLine("  /strings\t\tSpecifies that the obfuscator encrypts string constants");
-            System.Console.WriteLine("  /stopdecomp (/sd)\tIf specified, the obfuscator attempts to stop ");
+            
+            System.Console.WriteLine("  /confuse\t\tIf specified, the obfuscator attempts to stop ");
             System.Console.WriteLine("  \t\t\tdecompilation using various techniques");
+            
             System.Console.WriteLine("  /suppressildasm={0|1}\tSpecifieds whether to suppress disassembly to IL");
             System.Console.WriteLine("  \t\t\tusing the ildasm.exe tool (default is on)");
+            
+            System.Console.WriteLine("  /norename\t\tTurns off member renaming");
+
+            System.Console.WriteLine("  /strings\t\tEnables encryption of strings");
+
+            System.Console.WriteLine("  /tamperproof name\tPackages the output assemblies into a tamperproofed");
+            System.Console.WriteLine("  \t\t\tbootstrapper assembly");
+
+            System.Console.WriteLine("  /bootstraptype type\tSpecifies the output type of the bootstrapper");
+            System.Console.WriteLine("  \t\t\tassembly when tamperproofing. Options: console|windows");
+
             System.Console.WriteLine("  assemblies\t\tSpecifies the assemblies to include in the code ");
             System.Console.WriteLine("  \t\t\tprotection tasks");
             System.Console.WriteLine();
@@ -216,28 +236,6 @@ namespace TiviT.NCloak.Console
 
             //Set it
             Settings.OutputDirectory = outputDir;
-        }
-
-        /// <summary>
-        /// Configures the specified manager.
-        /// </summary>
-        /// <param name="manager">The manager.</param>
-        public void Configure(CloakManager manager)
-        {
-            //For now we'll just register the basic tasks
-            if (settings.EncryptStrings) //Encrypt strings before anything else
-                manager.RegisterTask(new StringEncryptionTask(StringEncryptionMethod.Xor));
-            manager.RegisterTask<MappingTask>();
-            manager.RegisterTask<ObfuscationTask>();
-            if (settings.SupressIldasm)
-                manager.RegisterTask<SupressIldasmTask>();
-            if (settings.ConfuseDecompilationMethod != ConfusionMethod.None)
-                manager.RegisterTask(new ConfuseDecompilationTask(ConfusionMethod.InvalidIl));
-            //Always last
-            if (String.IsNullOrEmpty(settings.TamperProofAssemblyName))
-                manager.RegisterTask<OutputAssembliesTask>(); //Default
-            else
-                manager.RegisterTask<TamperProofTask>(); //Tamper proofing combines all assemblies into one
         }
     }
 }

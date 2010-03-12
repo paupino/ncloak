@@ -1,4 +1,5 @@
-﻿using Mono.Cecil;
+﻿using System;
+using Mono.Cecil;
 using TiviT.NCloak.Mapping;
 
 namespace TiviT.NCloak.CloakTasks
@@ -6,11 +7,23 @@ namespace TiviT.NCloak.CloakTasks
     public class MappingTask : ICloakTask
     {
         /// <summary>
+        /// Gets the task name.
+        /// </summary>
+        /// <value>The name.</value>
+        public string Name
+        {
+            get { return "Creating call map"; }
+        }
+
+        /// <summary>
         /// Runs the specified cloaking task.
         /// </summary>
         /// <param name="context">The running context of this cloak job.</param>
         public void RunTask(ICloakContext context)
         {
+            //Get out if rename is turned off
+            if (context.Settings.NoRename)
+                return;
             //Go through the members and build up a mapping graph
             //If this is done then the members in the graph will be obfuscated, otherwise we'll 
             //just obfuscate private members

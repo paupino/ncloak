@@ -10,8 +10,6 @@
 
             //Create a cloak manager
             var manager = new CloakManager();
-            //Configure it (as necessary) - tasks etc
-            parser.Configure(manager);
             //Create a cloaking context
             var cloakContext = new CloakContext(parser.Settings);
             //Run the manager

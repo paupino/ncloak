@@ -8,6 +8,15 @@ namespace TiviT.NCloak.CloakTasks
     public class SupressIldasmTask : ICloakTask
     {
         /// <summary>
+        /// Gets the task name.
+        /// </summary>
+        /// <value>The name.</value>
+        public string Name
+        {
+            get { return "Inserting anti-ILDASM code"; }
+        }
+
+        /// <summary>
         /// Runs the specified cloaking task.
         /// </summary>
         /// <param name="context">The running context of this cloak job.</param>

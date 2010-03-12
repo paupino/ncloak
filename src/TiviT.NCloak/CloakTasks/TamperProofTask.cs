@@ -26,6 +26,15 @@ namespace TiviT.NCloak.CloakTasks
         private const int PasswordIterations = 2;
 
         /// <summary>
+        /// Gets the task name.
+        /// </summary>
+        /// <value>The name.</value>
+        public string Name
+        {
+            get { return "Tamperproofing assemblies"; }
+        }
+
+        /// <summary>
         /// Runs the specified cloaking task.
         /// </summary>
         /// <param name="context">The running context of this cloak job.</param>
@@ -121,7 +130,7 @@ namespace TiviT.NCloak.CloakTasks
 
             //Finally save this assembly to our output path
             string outputPath = Path.Combine(context.Settings.OutputDirectory, context.Settings.TamperProofAssemblyName + ".exe");
-            Console.WriteLine("Outputting assembly to {0}", outputPath);
+            OutputHelper.WriteLine("Outputting assembly to {0}", outputPath);
             AssemblyFactory.SaveAssembly(bootstrapperAssembly, outputPath);
         }
 

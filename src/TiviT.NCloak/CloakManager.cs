@@ -37,19 +37,62 @@ namespace TiviT.NCloak
         }
 
         /// <summary>
+        /// Configures the specified context.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        public void Configure(ICloakContext context)
+        {
+            if (context == null) throw new ArgumentNullException("context");
+
+            //Simplify the task
+            RegisterTask<SimplifyTask>();
+
+            //Encrypt strings before anything else
+            if (context.Settings.EncryptStrings) 
+                RegisterTask(new StringEncryptionTask(StringEncryptionMethod.Xor));
+
+            //Build up a mapping of the assembly and obfuscate
+            if (!context.Settings.NoRename)
+            {
+                RegisterTask<MappingTask>();
+                RegisterTask<ObfuscationTask>();
+            }
+
+            //Supress ILDASM decompilation
+            if (context.Settings.SupressIldasm)
+                RegisterTask<SupressIldasmTask>();
+
+            //Try to confuse reflection
+            if (context.Settings.ConfuseDecompilationMethod != ConfusionMethod.None)
+                RegisterTask(new ConfuseDecompilationTask(ConfusionMethod.InvalidIl));
+
+            //Optimize the assembly (turn into short codes where poss)
+            RegisterTask<OptimizeTask>();
+
+            //Always last - output the assembly in the relevant format
+            if (String.IsNullOrEmpty(context.Settings.TamperProofAssemblyName))
+                RegisterTask<OutputAssembliesTask>(); //Default
+            else
+                RegisterTask<TamperProofTask>(); //Tamper proofing combines all assemblies into one
+        }
+
+
+        /// <summary>
         /// Runs the clock process.
         /// </summary>
         public void Run(ICloakContext context)
         {
+            //Back stop - allows for tests to include only the relevant tasks
+            if (cloakingTasks.Count == 0)
+                Configure(context);
+
             //Make sure we have a context
             if (context == null) throw new ArgumentNullException("context");
 
             //Run through each of our tasks
             foreach (ICloakTask task in cloakingTasks)
             {
-#if DEBUG
-                Console.WriteLine("==== Executing task: {0} ====", task.GetType().FullName);
-#endif
+                OutputHelper.WriteTask(task);
                 task.RunTask(context);
             }
         }

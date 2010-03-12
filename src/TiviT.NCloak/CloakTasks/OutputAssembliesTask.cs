@@ -8,6 +8,15 @@ namespace TiviT.NCloak.CloakTasks
     public class OutputAssembliesTask : ICloakTask
     {
         /// <summary>
+        /// Gets the task name.
+        /// </summary>
+        /// <value>The name.</value>
+        public string Name
+        {
+            get { return "Outputting assemblies"; }
+        }
+
+        /// <summary>
         /// Runs the specified cloaking task.
         /// </summary>
         /// <param name="context">The running context of this cloak job.</param>
@@ -18,7 +27,7 @@ namespace TiviT.NCloak.CloakTasks
             {
                 //Save the assembly
                 string outputPath = Path.Combine(context.Settings.OutputDirectory, Path.GetFileName(assembly));
-                Console.WriteLine("Outputting assembly to {0}", outputPath);
+                OutputHelper.WriteLine("Outputting assembly to {0}", outputPath);
                 AssemblyFactory.SaveAssembly(assemblyCache[assembly], outputPath);
             }
         }

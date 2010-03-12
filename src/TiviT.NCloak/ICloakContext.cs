@@ -30,5 +30,10 @@ namespace TiviT.NCloak
         /// </summary>
         /// <returns></returns>
         Dictionary<string, AssemblyDefinition> GetAssemblyDefinitions();
+
+        /// <summary>
+        /// Reloads the assembly definitions; that is it goes through the current assemblies, outputs them to memory and then reloads them into the cache
+        /// </summary>
+        void ReloadAssemblyDefinitions();
     }
 }

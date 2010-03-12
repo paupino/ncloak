@@ -8,6 +8,15 @@ namespace TiviT.NCloak.CloakTasks
     public class ObfuscationTask : ICloakTask
     {
         /// <summary>
+        /// Gets the task name.
+        /// </summary>
+        /// <value>The name.</value>
+        public string Name
+        {
+            get { return "Obfuscating members"; }
+        }
+
+        /// <summary>
         /// Runs the specified cloaking task.
         /// </summary>
         public void RunTask(ICloakContext context)
@@ -95,7 +104,7 @@ namespace TiviT.NCloak.CloakTasks
                         case "callvirt":
                         case "newobj":
 #if DEBUG
-                            Console.WriteLine("Discovered {0} {1} ({2})", instruction.OpCode.Name, instruction.Operand, instruction.Operand.GetType().Name);
+                            OutputHelper.WriteLine("Discovered {0} {1} ({2})", instruction.OpCode.Name, instruction.Operand, instruction.Operand.GetType().Name);
 #endif
 
                             //Look at the operand
@@ -120,7 +129,7 @@ namespace TiviT.NCloak.CloakTasks
                         case "stfld":
                         case "ldfld":
 #if DEBUG
-                            Console.WriteLine("Discovered {0} {1} ({2})", instruction.OpCode.Name, instruction.Operand, instruction.Operand.GetType().Name);
+                            OutputHelper.WriteLine("Discovered {0} {1} ({2})", instruction.OpCode.Name, instruction.Operand, instruction.Operand.GetType().Name);
 #endif
                             //Look at the operand
                             FieldReference fieldReference = instruction.Operand as FieldReference;

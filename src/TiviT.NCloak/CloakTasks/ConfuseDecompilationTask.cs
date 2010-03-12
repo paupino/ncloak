@@ -29,6 +29,15 @@ namespace TiviT.NCloak.CloakTasks
         }
 
         /// <summary>
+        /// Gets the task name.
+        /// </summary>
+        /// <value>The name.</value>
+        public string Name
+        {
+            get { return "Confusing Reflector"; }
+        }
+
+        /// <summary>
         /// Runs the specified cloaking task.
         /// </summary>
         /// <param name="context">The running context of this cloak job.</param>
@@ -65,14 +74,20 @@ namespace TiviT.NCloak.CloakTasks
                 foreach (MethodDefinition md in td.Methods)
                 {
                     if (md.HasBody)
+                    {
+                        OutputHelper.WriteMethod(td, md);
                         InsertInvalidIl(md.Body);
+                    }
                 }
 
                 //Also do constructors
                 foreach (MethodDefinition ci in td.Constructors)
                 {
                     if (ci.HasBody)
+                    {
+                        OutputHelper.WriteMethod(td, ci);
                         InsertInvalidIl(ci.Body);
+                    }
 
                 }
             }
@@ -106,43 +121,8 @@ namespace TiviT.NCloak.CloakTasks
             //Add the branch to the start
             il.InsertBefore(invalidIlInstr2, branchStatement);
 
-            //Now readjust other branch statements
-            for (int i = 2; i < instructions.Count; i++)
-            {
-                //We only need to do this if the operand is an instruction
-                if (instructions[i].Operand is Instruction)
-                {
-                    //We need to find the target as it may have changed
-                    Instruction target = (Instruction)instructions[i].Operand;
-                    //Work out the new offset
-                    int offset = target.Offset + 4; //br.s opcode + invalid opcode
-                    target.Offset = offset;
-                    Instruction newInstr = il.Create(instructions[i].OpCode, target);
-                    il.Replace(instructions[i], newInstr);
-                }
-                else if (instructions[i].Operand is Instruction[]) //e.g. Switch statements
-                {
-                    //We need to find the target as it may have changed
-                    Instruction[] targets = (Instruction[])instructions[i].Operand;
-                    foreach (Instruction target in targets)
-                    {
-                        //Work out the new offset
-                        int offset = target.Offset + 4; //br.s opcode + invalid opcode
-                        target.Offset = offset;
-                    }
-                    Instruction newInstr = il.Create(instructions[i].OpCode, targets);
-                    il.Replace(instructions[i], newInstr);
-                }
-            }
-
-            //If there is a try adjust the starting point also
-            foreach (ExceptionHandler handler in methodBody.ExceptionHandlers)
-            {
-                //Work out the new offset
-                Instruction target = handler.TryStart;
-                target.Offset = target.Offset + 4;
-            }
-
+            //Readjust the offsets
+            il.AdjustOffsets(methodBody, 4);
         }
 
         internal static OpCode CreateInvalidOpCode()

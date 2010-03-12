@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Mono.Cecil;
 using TiviT.NCloak.Mapping;
+using System.IO;
 
 namespace TiviT.NCloak
 {
@@ -86,6 +88,26 @@ namespace TiviT.NCloak
             }
             assemblyDefinitionsLoaded = true;
             return assemblyDefinitions;
+        }
+
+        /// <summary>
+        /// Reloads the assembly definitions; that is it goes through the current assemblies, outputs them to memory and then reloads them into the cache
+        /// </summary>
+        public void ReloadAssemblyDefinitions()
+        {
+            //Check that there is something to do
+            if (!assemblyDefinitionsLoaded)
+                return;
+
+            //Process the cache
+            string[] keys = assemblyDefinitions.Keys.ToArray();
+            foreach (string key in keys)
+            {
+                AssemblyDefinition oldDef = assemblyDefinitions[key];
+                byte[] buffer;
+                AssemblyFactory.SaveAssembly(oldDef, out buffer);
+                assemblyDefinitions[key] = AssemblyFactory.GetAssembly(buffer);
+            }
         }
     }
 }

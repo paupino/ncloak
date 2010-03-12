@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define VERBOSE
+using System;
 using System.Collections.Generic;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -26,6 +27,15 @@ namespace TiviT.NCloak.CloakTasks
         {
             this.method = method;
             random = new Random();
+        }
+
+        /// <summary>
+        /// Gets the task name.
+        /// </summary>
+        /// <value>The name.</value>
+        public string Name
+        {
+            get { return "Encrypting strings"; }
         }
 
         /// <summary>
@@ -89,7 +99,10 @@ namespace TiviT.NCloak.CloakTasks
                     foreach (MethodDefinition methodDefinition in typeDefinition.Methods)
                     {
                         if (methodDefinition.HasBody)
+                        {
+                            OutputHelper.WriteMethod(typeDefinition, methodDefinition);
                             ProcessInstructions(definition, methodDefinition.Body, decryptionMethod);
+                        }
                     }
                 }
             }
@@ -203,7 +216,6 @@ namespace TiviT.NCloak.CloakTasks
             CilWorker il = body.CilWorker;
 
             List<Instruction> instructionsToExpand = new List<Instruction>();
-            List<Instruction> instructionsToFix = new List<Instruction>();
             List<int> offsets = new List<int>();
             foreach (Instruction instruction in instructions)
             {
@@ -215,11 +227,6 @@ namespace TiviT.NCloak.CloakTasks
                         if (instruction.Operand is string) //Only do the direct strings for now
                             instructionsToExpand.Add(instruction);
                         break;
-                }
-                if (instruction.Operand is Instruction || instruction.Operand is Instruction[])
-                {
-                    //Need to fix these
-                    instructionsToFix.Add(instruction);
                 }
             }
             //Fix each ldstr instruction found
@@ -238,7 +245,7 @@ namespace TiviT.NCloak.CloakTasks
                 int salt = random.Next(5000, 10000);
 
                 //Now we need to work out what the encrypted value is and set the operand
-                Console.WriteLine("Encrypting string \"{0}\"", originalValue);
+                OutputHelper.WriteLine("Encrypting string \"{0}\"", originalValue);
                 string byteArray = EncryptString(originalValue, salt);
                 Instruction loadString = il.Create(OpCodes.Ldstr, byteArray);
                 il.Replace(instruction, loadString);
@@ -254,75 +261,11 @@ namespace TiviT.NCloak.CloakTasks
 
             //Unfortunately one thing Mono.Cecil doesn't do is adjust instruction offsets for branch statements
             //and exception handling start points. We need to fix these manually
+            if (offsets.Count == 0)
+                return;
 
-            //Fix all branch statements
-            foreach (Instruction instruction in instructionsToFix)
-            {
-                //We need to find the target as it may have changed
-                if (instruction.Operand is Instruction)
-                {
-                    Instruction target = (Instruction) instruction.Operand;
-                    //Work out the new offset
-                    int originalOffset = target.Offset;
-                    int offset = target.Offset;
-                    foreach (int movedOffsets in offsets)
-                    {
-                        if (originalOffset > movedOffsets)
-                            offset += (6 + assemblyDef.GetAddressSize());
-                                //1 byte ldc.i4 operand, 4 bytes for i4, 1 byte call statement + address size
-                    }
-                    target.Offset = offset;
-                    OpCode opCode = instruction.OpCode;
-                    ////---
-                    //if (offset > 0x7f)
-                    //{
-                    //    //May need to convert from short form to long form
-                    //    switch (opCode.Code)
-                    //    {
-                    //        case Code.Br_S:
-                    //            opCode = OpCodes.Br;
-                    //            break;
-                    //    }
-                    //}
-                    ////---
-                    Instruction newInstr = il.Create(opCode, target);
-                    il.Replace(instruction, newInstr);
-                }
-                else if (instruction.Operand is Instruction[]) //e.g. Switch statements
-                {
-                    Instruction[] targets = (Instruction[])instruction.Operand;
-                    foreach (Instruction target in targets)
-                    {
-                        //Work out the new offset
-                        int originalOffset = target.Offset;
-                        int offset = target.Offset;
-                        foreach (int movedOffsets in offsets)
-                        {
-                            if (originalOffset > movedOffsets)
-                                offset += (6 + assemblyDef.GetAddressSize());
-                            //1 byte ldc.i4 operand, 4 bytes for i4, 1 byte call statement + address size
-                        }
-                        target.Offset = offset;
-                    }
-                    Instruction newInstr = il.Create(instruction.OpCode, targets);
-                    il.Replace(instruction, newInstr);
-                }
-            }
-
-            //If there is a try adjust the starting point also
-            foreach (ExceptionHandler handler in body.ExceptionHandlers)
-            {
-                //Work out the new offset
-                Instruction target = handler.TryStart;
-                int originalOffset = target.Offset;
-                int offset = target.Offset;
-                foreach (int movedOffsets in offsets)
-                {
-                    if (originalOffset > movedOffsets)
-                        offset += (6 + assemblyDef.GetAddressSize()); //1 byte ldc.i4 operand, 4 bytes for i4, 1 byte call statement + address size
-                }
-                target.Offset = offset;
-            }
+            //Do the adjustments
+            il.AdjustOffsets(body, offsets, 6 + assemblyDef.GetAddressSize());
         }
 
         /// <summary>

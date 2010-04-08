@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Mono.Cecil;
 
 namespace TiviT.NCloak.Mapping
 {
@@ -11,9 +13,9 @@ namespace TiviT.NCloak.Mapping
         private readonly Dictionary<string, MemberMapping> properties;
         private readonly Dictionary<string, MemberMapping> fields;
 
-        private readonly Dictionary<string, string> obfuscatedMethods;
-        private readonly Dictionary<string, string> obfuscatedProperties;
-        private readonly Dictionary<string, string> obfuscatedFields;
+        private readonly Dictionary<string, MethodReference> obfuscatedMethods;
+        private readonly Dictionary<string, PropertyReference> obfuscatedProperties;
+        private readonly Dictionary<string, FieldReference> obfuscatedFields;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TypeMapping"/> class.
@@ -29,9 +31,9 @@ namespace TiviT.NCloak.Mapping
             properties = new Dictionary<string, MemberMapping>();
             fields = new Dictionary<string, MemberMapping>();
 
-            obfuscatedMethods = new Dictionary<string, string>();
-            obfuscatedProperties = new Dictionary<string, string>();
-            obfuscatedFields = new Dictionary<string, string>();
+            obfuscatedMethods = new Dictionary<string, MethodReference>();
+            obfuscatedProperties = new Dictionary<string, PropertyReference>();
+            obfuscatedFields = new Dictionary<string, FieldReference>();
         }
 
         /// <summary>
@@ -55,105 +57,138 @@ namespace TiviT.NCloak.Mapping
         /// <summary>
         /// Adds a new method name mapping.
         /// </summary>
-        /// <param name="methodName">Name of the method.</param>
+        /// <param name="method">The original method reference.</param>
         /// <param name="obfuscatedMethodName">Name of the obfuscated method.</param>
-        public void AddMethodMapping(string methodName, string obfuscatedMethodName)
+        public void AddMethodMapping(MethodReference method, string obfuscatedMethodName)
         {
-            methods.Add(methodName, new MemberMapping(methodName, obfuscatedMethodName));
-            obfuscatedMethods.Add(obfuscatedMethodName, methodName);
+            if (method == null) throw new ArgumentNullException("method");
+            string methodName = method.Name;
+            if (!methods.ContainsKey(methodName))
+            {
+                methods.Add(methodName, new MemberMapping(methodName, obfuscatedMethodName));
+                obfuscatedMethods.Add(obfuscatedMethodName, method);
+            }
         }
 
         /// <summary>
         /// Adds a new property name mapping.
         /// </summary>
-        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="property">The original property reference.</param>
         /// <param name="obfuscatedPropertyName">Name of the obfuscated property.</param>
-        public void AddPropertyMapping(string propertyName, string obfuscatedPropertyName)
+        public void AddPropertyMapping(PropertyReference property, string obfuscatedPropertyName)
         {
-            properties.Add(propertyName, new MemberMapping(propertyName, obfuscatedPropertyName));
-            obfuscatedProperties.Add(obfuscatedPropertyName, propertyName);
+            if (property == null) throw new ArgumentNullException("property");
+            string propertyName = property.Name;
+            if (!properties.ContainsKey(propertyName))
+            {
+                properties.Add(propertyName, new MemberMapping(propertyName, obfuscatedPropertyName));
+                obfuscatedProperties.Add(obfuscatedPropertyName, property);
+            }
         }
 
         /// <summary>
         /// Adds a new field name mapping.
         /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="field">The original field reference.</param>
         /// <param name="obfuscatedFieldName">Name of the obfuscated field.</param>
-        public void AddFieldMapping(string fieldName, string obfuscatedFieldName)
+        public void AddFieldMapping(FieldReference field, string obfuscatedFieldName)
         {
-            fields.Add(fieldName, new MemberMapping(fieldName, obfuscatedFieldName));
-            obfuscatedFields.Add(obfuscatedFieldName, fieldName);
+            if (field == null) throw new ArgumentNullException("field");
+            string fieldName = field.Name;
+            if (!fields.ContainsKey(fieldName))
+            {
+                fields.Add(fieldName, new MemberMapping(fieldName, obfuscatedFieldName));
+                obfuscatedFields.Add(obfuscatedFieldName, field);
+            }
         }
 
         /// <summary>
         /// Determines whether a method mapping exists for the specified method name.
         /// </summary>
-        /// <param name="methodName">Name of the method.</param>
+        /// <param name="method">The original method reference.</param>
         /// <returns>
         /// 	<c>true</c> if a method mapping exists; otherwise, <c>false</c>.
         /// </returns>
-        public bool HasMethodMapping(string methodName)
+        public bool HasMethodMapping(MethodReference method)
         {
+            if (method == null) throw new ArgumentNullException("method");
+            string methodName = method.Name;
             return methods.ContainsKey(methodName);
         }
 
         /// <summary>
         /// Determines whether a property mapping exists for the specified property name.
         /// </summary>
-        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="property">The original property reference.</param>
         /// <returns>
         /// 	<c>true</c> if a property mapping exists; otherwise, <c>false</c>.
         /// </returns>
-        public bool HasPropertyMapping(string propertyName)
+        public bool HasPropertyMapping(PropertyReference property)
         {
+            if (property == null) throw new ArgumentNullException("property");
+            string propertyName = property.Name;
             return properties.ContainsKey(propertyName);
         }
 
         /// <summary>
         /// Determines whether a field mapping exists for the specified field name.
         /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="field">The original field reference.</param>
         /// <returns>
         /// 	<c>true</c> if a field mapping exists; otherwise, <c>false</c>.
         /// </returns>
-        public bool HasFieldMapping(string fieldName)
+        public bool HasFieldMapping(FieldReference field)
         {
+            if (field == null) throw new ArgumentNullException("field");
+            string fieldName = field.Name;
             return fields.ContainsKey(fieldName);
         }
 
         /// <summary>
         /// Gets the name of the obfuscated method.
         /// </summary>
-        /// <param name="methodName">Name of the original method.</param>
+        /// <param name="method">The original method reference.</param>
         /// <returns></returns>
-        public string GetObfuscatedMethodName(string methodName)
+        public string GetObfuscatedMethodName(MethodReference method)
         {
-            if (HasMethodMapping(methodName))
+            if (method == null) throw new ArgumentNullException("method");
+            if (HasMethodMapping(method))
+            {
+                string methodName = method.Name;
                 return methods[methodName].ObfuscatedMemberName;
+            }
             return null;
         }
 
         /// <summary>
         /// Gets the name of the obfuscated property.
         /// </summary>
-        /// <param name="propertyName">Name of the original property.</param>
+        /// <param name="property">The original property reference.</param>
         /// <returns></returns>
-        public string GetObfuscatedPropertyName(string propertyName)
+        public string GetObfuscatedPropertyName(PropertyReference property)
         {
-            if (HasPropertyMapping(propertyName))
+            if (property == null) throw new ArgumentNullException("property");
+            if (HasPropertyMapping(property))
+            {
+                string propertyName = property.Name;
                 return properties[propertyName].ObfuscatedMemberName;
+            }
             return null;
         }
 
         /// <summary>
         /// Gets the name of the obfuscated field.
         /// </summary>
-        /// <param name="fieldName">Name of the original field.</param>
+        /// <param name="field">The original field reference.</param>
         /// <returns></returns>
-        public string GetObfuscatedFieldName(string fieldName)
+        public string GetObfuscatedFieldName(FieldReference field)
         {
-            if (HasFieldMapping(fieldName))
+            if (field == null) throw new ArgumentNullException("field");
+            if (HasFieldMapping(field))
+            {
+                string fieldName = field.Name;
                 return fields[fieldName].ObfuscatedMemberName;
+            }
             return null;
         }
 

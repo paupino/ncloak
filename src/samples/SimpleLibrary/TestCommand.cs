@@ -30,12 +30,28 @@ namespace SimpleLibrary
                 case "long":
                     TestLongCodeStatement();
                     break;
+                case "overload":
+                    TestOverload();
+                    TestOverload(true);
+                    break;
                 default:
                     Console.WriteLine("Unknown option: {0}", args[0]);
                     break;
             }
             return 0;
         }
+
+        private void TestOverload()
+        {
+            TestOverload(false);
+        }
+
+        // ReSharper disable MemberCanBeMadeStatic.Local
+        private void TestOverload(bool value)
+        {
+            Console.WriteLine("Running overload with argument: {0}", value);
+        }
+        // ReSharper restore MemberCanBeMadeStatic.Local
 
         private static void TestSwitchStatement()
         {

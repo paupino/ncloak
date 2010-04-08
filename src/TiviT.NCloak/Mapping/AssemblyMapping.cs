@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System;
+using Mono.Cecil;
 
 namespace TiviT.NCloak.Mapping
 {
@@ -32,11 +33,14 @@ namespace TiviT.NCloak.Mapping
         /// <summary>
         /// Adds the type mapping to the assembly.
         /// </summary>
-        /// <param name="typeName">Name of the type.</param>
+        /// <param name="type">The type.</param>
         /// <param name="obfuscatedTypeName">Name of the obfuscated type.</param>
         /// <returns></returns>
-        public TypeMapping AddType(string typeName, string obfuscatedTypeName)
+        public TypeMapping AddType(TypeReference type, string obfuscatedTypeName)
         {
+            string typeName = type.Namespace + "." + type.Name;
+            if (obfuscatedTypeName != null)
+                obfuscatedTypeName = type.Namespace = "." + obfuscatedTypeName;
             TypeMapping typeMapping = new TypeMapping(typeName, obfuscatedTypeName);
             typeMappingTable.Add(typeName, typeMapping);
             //Add a reverse mapping
@@ -48,10 +52,13 @@ namespace TiviT.NCloak.Mapping
         /// <summary>
         /// Gets the type mapping.
         /// </summary>
-        /// <param name="typeName">Name of the type.</param>
+        /// <param name="type">The type.</param>
         /// <returns></returns>
-        public TypeMapping GetTypeMapping(string typeName)
+        public TypeMapping GetTypeMapping(TypeReference type)
         {
+            if (type == null)
+                return null;
+            string typeName = type.Namespace + "." + type.Name;
             if (typeMappingTable.ContainsKey(typeName))
                 return typeMappingTable[typeName];
 

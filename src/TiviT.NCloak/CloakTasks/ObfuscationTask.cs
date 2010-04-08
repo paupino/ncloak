@@ -48,7 +48,7 @@ namespace TiviT.NCloak.CloakTasks
                     foreach (TypeDefinition typeDefinition in moduleDefinition.Types)
                     {
                         //Get the type mapping
-                        TypeMapping typeMapping = assemblyMapping.GetTypeMapping(typeDefinition.Name);
+                        TypeMapping typeMapping = assemblyMapping.GetTypeMapping(typeDefinition);
                         if (typeMapping == null)
                             continue; //There is a problem....
                         //Rename if necessary
@@ -58,8 +58,8 @@ namespace TiviT.NCloak.CloakTasks
                         //Go through each method
                         foreach (MethodDefinition methodDefinition in typeDefinition.Methods)
                         {
-                            if (typeMapping.HasMethodMapping(methodDefinition.Name))
-                                methodDefinition.Name = typeMapping.GetObfuscatedMethodName(methodDefinition.Name);
+                            if (typeMapping.HasMethodMapping(methodDefinition))
+                                methodDefinition.Name = typeMapping.GetObfuscatedMethodName(methodDefinition);
 
                             //Dive into the method body
                             UpdateMethodReferences(context, methodDefinition);
@@ -68,9 +68,9 @@ namespace TiviT.NCloak.CloakTasks
                         //Properties
                         foreach (PropertyDefinition propertyDefinition in typeDefinition.Properties)
                         {
-                            if (typeMapping.HasPropertyMapping(propertyDefinition.Name))
+                            if (typeMapping.HasPropertyMapping(propertyDefinition))
                                 propertyDefinition.Name =
-                                    typeMapping.GetObfuscatedPropertyName(propertyDefinition.Name);
+                                    typeMapping.GetObfuscatedPropertyName(propertyDefinition);
 
                             //Dive into the method body
                             if (propertyDefinition.GetMethod != null)
@@ -82,8 +82,8 @@ namespace TiviT.NCloak.CloakTasks
                         //Fields
                         foreach (FieldDefinition fieldDefinition in typeDefinition.Fields)
                         {
-                            if (typeMapping.HasFieldMapping(fieldDefinition.Name))
-                                fieldDefinition.Name = typeMapping.GetObfuscatedFieldName(fieldDefinition.Name);
+                            if (typeMapping.HasFieldMapping(fieldDefinition))
+                                fieldDefinition.Name = typeMapping.GetObfuscatedFieldName(fieldDefinition);
                         }
 
                     }
@@ -158,7 +158,7 @@ namespace TiviT.NCloak.CloakTasks
                 if (context.MappingGraph.IsAssemblyMappingDefined(assemblyName))
                 {
                     AssemblyMapping assemblyMapping = context.MappingGraph.GetAssemblyMapping(assemblyName);
-                    TypeMapping t = assemblyMapping.GetTypeMapping(methodType.Name);
+                    TypeMapping t = assemblyMapping.GetTypeMapping(methodType);
                     if (t == null)
                         return; //No type defined
 
@@ -172,19 +172,21 @@ namespace TiviT.NCloak.CloakTasks
                         MethodSpecification specification = (MethodSpecification)memberReference;
                         MethodReference meth = specification.GetOriginalMethod();
                         //Update the method name also if available
-                        if (t.HasMethodMapping(meth.Name))
-                            meth.Name = t.GetObfuscatedMethodName(meth.Name);
+                        if (t.HasMethodMapping(meth))
+                            meth.Name = t.GetObfuscatedMethodName(meth);
                     }
                     else if (memberReference is FieldReference)
                     {
-                        if (t.HasFieldMapping(memberReference.Name))
-                            memberReference.Name = t.GetObfuscatedFieldName(memberReference.Name);
+                        FieldReference fr = (FieldReference) memberReference;
+                        if (t.HasFieldMapping(fr))
+                            memberReference.Name = t.GetObfuscatedFieldName(fr);
                     }
-                    else
+                    else if (memberReference is MethodReference) //Is this ever used?? Used to be just an else without if
                     {
+                        MethodReference mr = (MethodReference) memberReference;
                         //Update the method name also if available
-                        if (t.HasMethodMapping(memberReference.Name))
-                            memberReference.Name = t.GetObfuscatedMethodName(memberReference.Name);
+                        if (t.HasMethodMapping(mr))
+                            memberReference.Name = t.GetObfuscatedMethodName(mr);
                     }
                 }
             }
@@ -205,7 +207,7 @@ namespace TiviT.NCloak.CloakTasks
                 if (context.MappingGraph.IsAssemblyMappingDefined(assemblyName))
                 {
                     AssemblyMapping assemblyMapping = context.MappingGraph.GetAssemblyMapping(assemblyName);
-                    TypeMapping t = assemblyMapping.GetTypeMapping(typeReference.Name);
+                    TypeMapping t = assemblyMapping.GetTypeMapping(typeReference);
                     if (t == null)
                         return; //No type defined
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Cecil.Rocks;
 using MethodBody=Mono.Cecil.Cil.MethodBody;
 using System.Runtime.InteropServices;
 
@@ -68,7 +69,7 @@ namespace TiviT.NCloak.CloakTasks
         private static void ConfuseDecompilationWithInvalidIl(AssemblyDefinition definition)
         {
             //Go through each type in the assembly
-            foreach (TypeDefinition td in definition.MainModule.Types)
+            foreach (TypeDefinition td in definition.MainModule.GetAllTypes())
             {
                 //Go through each method and insert invalid il at the beginning
                 foreach (MethodDefinition md in td.Methods)
@@ -79,7 +80,7 @@ namespace TiviT.NCloak.CloakTasks
                         InsertInvalidIl(md.Body);
                     }
                 }
-
+                /*
                 //Also do constructors
                 foreach (MethodDefinition ci in td.Constructors)
                 {
@@ -90,6 +91,7 @@ namespace TiviT.NCloak.CloakTasks
                     }
 
                 }
+                 */
             }
         }
 
@@ -100,10 +102,10 @@ namespace TiviT.NCloak.CloakTasks
         private static void InsertInvalidIl(MethodBody methodBody)
         {
             //Get the instructions and cil worker
-            InstructionCollection instructions = methodBody.Instructions;
+            var instructions = methodBody.Instructions;
             if (instructions.Count <= 0)
                 return; //We can only do this if we have instructions to work with
-            CilWorker il = methodBody.CilWorker;
+            ILProcessor il = methodBody.GetILProcessor();
 
             //First create an invalid il instruction
             OpCode fakeOpCode = CreateInvalidOpCode();

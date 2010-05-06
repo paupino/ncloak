@@ -1,4 +1,5 @@
 ﻿using Mono.Cecil;
+using Mono.Cecil.Rocks;
 using Mono.Cecil.Cil;
 using System;
 
@@ -35,7 +36,7 @@ namespace TiviT.NCloak.CloakTasks
                 foreach (ModuleDefinition moduleDefinition in assembly.Modules)
                 {
                     //Go through each type
-                    foreach (TypeDefinition typeDefinition in moduleDefinition.Types)
+                    foreach (TypeDefinition typeDefinition in moduleDefinition.GetAllTypes())
                     {
                         //Go through each method
                         foreach (MethodDefinition methodDefinition in typeDefinition.Methods)
@@ -43,7 +44,7 @@ namespace TiviT.NCloak.CloakTasks
                             if (methodDefinition.HasBody)
                             {
                                 OutputHelper.WriteMethod(typeDefinition, methodDefinition);
-                                methodDefinition.Body.Optimize();
+                                methodDefinition.Body.OptimizeMacros();
                             }
                         }
                     }

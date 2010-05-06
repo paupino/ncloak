@@ -1,4 +1,5 @@
 ﻿using Mono.Cecil;
+using Mono.Cecil.Rocks;
 using TiviT.NCloak.Mapping;
 
 namespace TiviT.NCloak.CloakTasks
@@ -54,7 +55,7 @@ namespace TiviT.NCloak.CloakTasks
             foreach (ModuleDefinition moduleDefinition in definition.Modules)
             {
                 //Go through each type
-                foreach (TypeDefinition typeDefinition in moduleDefinition.Types)
+                foreach (TypeDefinition typeDefinition in moduleDefinition.GetAllTypes())
                 {
                     //First of all - see if we've declared it already - if so get the existing reference
                     TypeMapping typeMapping = assemblyMapping.GetTypeMapping(typeDefinition);
@@ -73,6 +74,10 @@ namespace TiviT.NCloak.CloakTasks
                     {
                         //First of all - check if we've obfuscated it already - if we have then don't bother
                         if (typeMapping.HasMethodBeenObfuscated(methodDefinition.Name))
+                            continue;
+
+                        //We won't do constructors - causes issues
+                        if (methodDefinition.IsConstructor)
                             continue;
 
                         //We haven't - let's work out the obfuscated name
@@ -276,15 +281,14 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="definition">The definition.</param>
         /// <param name="property">The property definition/reference.</param>
         /// <returns></returns>
-        private static TypeDefinition FindBaseTypeDeclaration(TypeDefinition definition, IMemberReference property)
+        private static TypeDefinition FindBaseTypeDeclaration(TypeDefinition definition, MemberReference property)
         {
             //Search the interfaces first
             foreach (TypeReference tr in definition.Interfaces)
             {
                 //Convert to a type definition
                 TypeDefinition td = tr.GetTypeDefinition();
-                PropertyDefinition[] pd = td.Properties.GetProperties(property.Name);
-                if (pd != null && pd.Length > 0)
+                if (td.Properties.HasProperty(property.Name))
                     return td; 
 
                 //Do a recursive search below
@@ -300,8 +304,7 @@ namespace TiviT.NCloak.CloakTasks
                 TypeDefinition baseTd = baseTr.GetTypeDefinition();
                 if (baseTd != null)
                 {
-                    PropertyDefinition[] pd = baseTd.Properties.GetProperties(property.Name);
-                    if (pd != null && pd.Length > 0)
+                    if (baseTd.Properties.HasProperty(property.Name))
                         return baseTd;
 
                     //Do a recursive search below

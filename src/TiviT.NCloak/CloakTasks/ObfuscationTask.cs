@@ -1,6 +1,7 @@
 ﻿using System;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Cecil.Rocks;
 using TiviT.NCloak.Mapping;
 
 namespace TiviT.NCloak.CloakTasks
@@ -45,7 +46,7 @@ namespace TiviT.NCloak.CloakTasks
                 foreach (ModuleDefinition moduleDefinition in definition.Modules)
                 {
                     //Go through each type
-                    foreach (TypeDefinition typeDefinition in moduleDefinition.Types)
+                    foreach (TypeDefinition typeDefinition in moduleDefinition.GetAllTypes())
                     {
                         //Get the type mapping
                         TypeMapping typeMapping = assemblyMapping.GetTypeMapping(typeDefinition);
@@ -58,11 +59,17 @@ namespace TiviT.NCloak.CloakTasks
                         //Go through each method
                         foreach (MethodDefinition methodDefinition in typeDefinition.Methods)
                         {
+                            //If this is an entry method then note it
+                            //bool isEntry = false;
+                            //if (definition.EntryPoint != null && definition.EntryPoint.Name == methodDefinition.Name)
+                            //    isEntry = true;
                             if (typeMapping.HasMethodMapping(methodDefinition))
                                 methodDefinition.Name = typeMapping.GetObfuscatedMethodName(methodDefinition);
 
                             //Dive into the method body
                             UpdateMethodReferences(context, methodDefinition);
+                            //if (isEntry)
+                            //    definition.EntryPoint = methodDefinition;
                         }
 
                         //Properties
@@ -146,7 +153,7 @@ namespace TiviT.NCloak.CloakTasks
         /// </summary>
         /// <param name="context">The context.</param>
         /// <param name="memberReference">The member reference.</param>
-        private static void UpdateMemberTypeReferences(ICloakContext context, IMemberReference memberReference)
+        private static void UpdateMemberTypeReferences(ICloakContext context, MemberReference memberReference)
         {
             //Get the type reference for this
             TypeReference methodType = memberReference.DeclaringType;
@@ -170,7 +177,7 @@ namespace TiviT.NCloak.CloakTasks
                     if (memberReference is MethodSpecification)
                     {
                         MethodSpecification specification = (MethodSpecification)memberReference;
-                        MethodReference meth = specification.GetOriginalMethod();
+                        MethodReference meth = specification.GetElementMethod();
                         //Update the method name also if available
                         if (t.HasMethodMapping(meth))
                             meth.Name = t.GetObfuscatedMethodName(meth);

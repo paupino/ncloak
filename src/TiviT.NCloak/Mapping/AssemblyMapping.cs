@@ -39,13 +39,16 @@ namespace TiviT.NCloak.Mapping
         public TypeMapping AddType(TypeReference type, string obfuscatedTypeName)
         {
             string typeName = type.Namespace + "." + type.Name;
+            //TODO Take into account namespaces
+            /*
             if (obfuscatedTypeName != null)
-                obfuscatedTypeName = type.Namespace = "." + obfuscatedTypeName;
+                obfuscatedTypeName = type.Namespace + "." + obfuscatedTypeName;
+             */
             TypeMapping typeMapping = new TypeMapping(typeName, obfuscatedTypeName);
             typeMappingTable.Add(typeName, typeMapping);
             //Add a reverse mapping
             if (!String.IsNullOrEmpty(obfuscatedTypeName))
-                obfuscatedToOriginalMapping.Add(obfuscatedTypeName, typeName);
+                obfuscatedToOriginalMapping.Add(type.Namespace + "." + obfuscatedTypeName, typeName);
             return typeMapping;
         }
 

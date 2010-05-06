@@ -69,7 +69,11 @@ namespace TiviT.NCloak.CloakTasks
             {
                 //Get the raw data of the assembly
                 byte[] assemblyRawData;
-                AssemblyFactory.SaveAssembly(assemblies[assembly], out assemblyRawData);
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    assemblies[assembly].Write(ms);
+                    assemblyRawData = ms.ToArray();
+                }
 #if OUTPUT_PRE_TAMPER
                 File.WriteAllBytes(context.Settings.OutputDirectory + "\\" + Path.GetFileName(assembly), assemblyRawData);
 #endif
@@ -83,9 +87,10 @@ namespace TiviT.NCloak.CloakTasks
 
             //Now we've got that information - it's up to us to generate a bootstrapper assembly
             //We'll do this by starting from scratch
+            
             AssemblyDefinition bootstrapperAssembly =
-                AssemblyFactory.DefineAssembly(context.Settings.TamperProofAssemblyName, TargetRuntime.NET_2_0,
-                context.Settings.TamperProofAssemblyType == AssemblyType.Windows ? AssemblyKind.Windows : AssemblyKind.Console);
+                AssemblyDefinition.CreateAssembly(new AssemblyNameDefinition(context.Settings.TamperProofAssemblyName, new Version(1, 0)), null,
+                context.Settings.TamperProofAssemblyType == AssemblyType.Windows ? ModuleKind.Windows : ModuleKind.Console);
 
             //Add some resources - encrypted assemblies
 #if USE_FRIENDLY_NAMING
@@ -131,7 +136,7 @@ namespace TiviT.NCloak.CloakTasks
             //Finally save this assembly to our output path
             string outputPath = Path.Combine(context.Settings.OutputDirectory, context.Settings.TamperProofAssemblyName + ".exe");
             OutputHelper.WriteLine("Outputting assembly to {0}", outputPath);
-            AssemblyFactory.SaveAssembly(bootstrapperAssembly, outputPath);
+            bootstrapperAssembly.Write(outputPath);
         }
 
         /// <summary>
@@ -176,13 +181,10 @@ namespace TiviT.NCloak.CloakTasks
             string executingAssemblyVariableName = context.NameManager.GenerateName(NamingTable.Field);
             string loadedAssembliesVariableName = context.NameManager.GenerateName(NamingTable.Field);
 #endif
-            var assembliesLoaded = new FieldDefinition(assembliesLoadedVariableName, assembly.Import(typeof(bool)), FieldAttributes.Private);
-            var assemblyLock = new FieldDefinition(assemblyLockVariableName, assembly.Import(typeof(object)), FieldAttributes.Private | FieldAttributes.InitOnly);
-            var executingAssembly = new FieldDefinition(executingAssemblyVariableName, assembly.Import(typeof(Assembly)),
-                                                        FieldAttributes.Private | FieldAttributes.InitOnly);
-            var loadedAssemblies = new FieldDefinition(loadedAssembliesVariableName,
-                                                       assembly.Import(typeof(Dictionary<string, Assembly>)),
-                                                       FieldAttributes.Private | FieldAttributes.InitOnly);
+            var assembliesLoaded = new FieldDefinition(assembliesLoadedVariableName, FieldAttributes.Private, assembly.Import(typeof(bool)));
+            var assemblyLock = new FieldDefinition(assemblyLockVariableName, FieldAttributes.Private | FieldAttributes.InitOnly, assembly.Import(typeof(object)));
+            var executingAssembly = new FieldDefinition(executingAssemblyVariableName, FieldAttributes.Private | FieldAttributes.InitOnly, assembly.Import(typeof(Assembly)));
+            var loadedAssemblies = new FieldDefinition(loadedAssembliesVariableName,FieldAttributes.Private | FieldAttributes.InitOnly, assembly.Import(typeof(Dictionary<string, Assembly>)));
             programType.Fields.Add(assembliesLoaded);
             programType.Fields.Add(assemblyLock);
             programType.Fields.Add(executingAssembly);
@@ -245,8 +247,8 @@ namespace TiviT.NCloak.CloakTasks
 
             //Create a default constructor
             var ctor = assembly.CreateDefaultConstructor(entryType);
-            ctor.MaxStack = 8;
-            var il = ctor.CilWorker;
+            ctor.MaxStackSize = 8;
+            var il = ctor.GetILProcessor();
             InjectAntiReflectorCode(il, il.Create(OpCodes.Ldarg_0));
             var objectCtor = assembly.Import(typeof (object).GetConstructor(Type.EmptyTypes));
             il.Append(il.Create(OpCodes.Call, objectCtor));
@@ -275,14 +277,14 @@ namespace TiviT.NCloak.CloakTasks
                                                MethodAttributes.Private | MethodAttributes.HideBySig, assembly.Import(typeof(void)));
 #endif
             method.Body.InitLocals = true;
-            method.Body.MaxStack = 2;
+            method.Body.MaxStackSize = 2;
             method.AddLocal(assembly, typeof (string)); //Resource name
             method.AddLocal(assembly, typeof (string[])); //Foreach temp
             method.AddLocal(assembly, typeof (int)); //Loop counter
             method.AddLocal(assembly, typeof(bool));
 
             //Build the body
-            var il = method.Body.CilWorker;
+            var il = method.Body.GetILProcessor();
             InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
             il.Append(OpCodes.Nop);
             il.Append(OpCodes.Ldarg_0);
@@ -389,7 +391,7 @@ namespace TiviT.NCloak.CloakTasks
             method.Parameters.Add(new ParameterDefinition(assembly.Import(typeof(string))));
 
             method.Body.InitLocals = true;
-            method.Body.MaxStack = 4;
+            method.Body.MaxStackSize = 4;
             method.AddLocal(assembly, typeof(string)); //Hash
             method.AddLocal(assembly, typeof(Stream)); //Stream for loading
             method.AddLocal(assembly, typeof(byte[])); //Hash data
@@ -403,7 +405,7 @@ namespace TiviT.NCloak.CloakTasks
             var tempBool = method.AddLocal(assembly, typeof(bool)); //Temp bool
 
             //Build the body
-            var il = method.Body.CilWorker;
+            var il = method.Body.GetILProcessor();
             InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
 
 #if VERBOSE_OUTPUT
@@ -717,13 +719,13 @@ namespace TiviT.NCloak.CloakTasks
             method.Parameters.Add(new ParameterDefinition(assembly.Import(typeof(string))));
             
             method.Body.InitLocals = true;
-            method.Body.MaxStack = 2;
+            method.Body.MaxStackSize = 2;
             method.AddLocal(assembly, typeof(Assembly)); //Assembly
             method.AddLocal(assembly, typeof(Type)); //Temp variable for return type
             method.AddLocal(assembly, typeof(bool)); //Temp variable for comparison
 
             //Start with injection
-            var il = method.Body.CilWorker;
+            var il = method.Body.GetILProcessor();
             InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
 
             //Start the code
@@ -780,12 +782,12 @@ namespace TiviT.NCloak.CloakTasks
 #endif
             method.Parameters.Add(new ParameterDefinition(assembly.Import(typeof(byte[]))));
             method.Body.InitLocals = true;
-            method.Body.MaxStack = 2;
+            method.Body.MaxStackSize = 2;
             method.AddLocal(assembly, typeof(SHA256));
             method.AddLocal(assembly, typeof(string));
 
             //Easy method to output
-            var il = method.Body.CilWorker;
+            var il = method.Body.GetILProcessor();
 
             //Inject some anti reflector stuff
             InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
@@ -829,7 +831,7 @@ namespace TiviT.NCloak.CloakTasks
                                                            MethodAttributes.Static, assembly.Import(typeof(byte[])));
 #endif
             method.Body.InitLocals = true;
-            method.Body.MaxStack = 5;
+            method.Body.MaxStackSize = 5;
             method.Parameters.Add(new ParameterDefinition(byteArrayType));
             method.Parameters.Add(new ParameterDefinition(byteArrayType));
             method.Parameters.Add(new ParameterDefinition(byteArrayType));
@@ -846,7 +848,7 @@ namespace TiviT.NCloak.CloakTasks
             var inferredBool = method.AddLocal(assembly, typeof(bool));
 
             //Add the body
-            var il = method.Body.CilWorker;
+            var il = method.Body.GetILProcessor();
 
             //Inject anti reflector code
             InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
@@ -1027,11 +1029,11 @@ namespace TiviT.NCloak.CloakTasks
 #endif
 
             //Declare the resource parameter
-            method.Parameters.Add(new ParameterDefinition("sender", 0, Mono.Cecil.ParameterAttributes.None, assembly.Import(typeof(object))));
+            method.Parameters.Add(new ParameterDefinition("sender", Mono.Cecil.ParameterAttributes.None, assembly.Import(typeof(object))));
             method.Parameters.Add(new ParameterDefinition(assembly.Import(typeof(ResolveEventArgs))));
             
             method.Body.InitLocals = true;
-            method.Body.MaxStack = 2;
+            method.Body.MaxStackSize = 2;
             method.AddLocal(assembly, typeof(Assembly[])); //currentAssemblies
             method.AddLocal(assembly, typeof(Assembly));   //a
             method.AddLocal(assembly, typeof(Assembly));   //temp assembly
@@ -1041,7 +1043,7 @@ namespace TiviT.NCloak.CloakTasks
             var tempInt = method.AddLocal(assembly, typeof (int)); //temp int
         
             //Get the il builder
-            var il = method.Body.CilWorker;
+            var il = method.Body.GetILProcessor();
 
             //Inject the anti reflector code
             InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
@@ -1194,7 +1196,7 @@ namespace TiviT.NCloak.CloakTasks
 #endif
 
             method.Body.InitLocals = true;
-            method.Body.MaxStack = 3;
+            method.Body.MaxStackSize = 3;
             method.AddLocal(assembly, typeof(string));   //entryAssemblyResource
             method.AddLocal(assembly, typeof(string));   //entryType
             method.AddLocal(assembly, typeof(string));   //entryMethod
@@ -1208,7 +1210,7 @@ namespace TiviT.NCloak.CloakTasks
             var tempBool = method.AddLocal(assembly, typeof(bool));
 
             //Get the il builder
-            var il = method.Body.CilWorker;
+            var il = method.Body.GetILProcessor();
 
             //Inject the anti reflector code
             InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
@@ -1507,10 +1509,10 @@ namespace TiviT.NCloak.CloakTasks
         private static void BuildProgramConstructor(AssemblyDefinition assembly, TypeDefinition programType, FieldReference assemblyLock, FieldReference executingAssembly, FieldReference loadedAssemblies, MethodReference currentDomain, MethodReference eventHandler, MethodReference assemblyResolve, MethodReference getExecutingAssembly, MethodReference resolveMethod)
         {
             var body = assembly.CreateDefaultConstructor(programType);
-            body.MaxStack = 4;
+            body.MaxStackSize = 4;
             body.InitLocals = true;
             body.Variables.Add(new VariableDefinition(assembly.Import(typeof(AppDomain))));
-            var il = body.CilWorker;
+            var il = body.GetILProcessor();
 
             //Inject anti reflector code
             InjectAntiReflectorCode(il, il.Create(OpCodes.Ldarg_0));
@@ -1569,7 +1571,7 @@ namespace TiviT.NCloak.CloakTasks
                                      MethodAttributes.HideBySig, assembly.Import(typeof(void)));
 #endif
             entryPoint.Body.InitLocals = true;
-            entryPoint.Body.MaxStack = 4;
+            entryPoint.Body.MaxStackSize = 4;
 
 #if USE_APPDOMAIN
             //Initialise some locals
@@ -1583,7 +1585,7 @@ namespace TiviT.NCloak.CloakTasks
             assembly.EntryPoint = entryPoint;
 
             //Declare the il to build the code
-            CilWorker il = entryPoint.Body.CilWorker;
+            ILProcessor il = entryPoint.Body.GetILProcessor();
 
             //First of all add the anti reflector code
             InjectAntiReflectorCode(il, il.Create(OpCodes.Nop));
@@ -1660,7 +1662,7 @@ namespace TiviT.NCloak.CloakTasks
         /// </summary>
         /// <param name="il">The il builder.</param>
         /// <param name="first">The first instruction to use.</param>
-        private static void InjectAntiReflectorCode(CilWorker il, Instruction first)
+        private static void InjectAntiReflectorCode(ILProcessor il, Instruction first)
         {
             il.Append(il.Create(OpCodes.Br_S, first));
             il.Append(ConfuseDecompilationTask.CreateInvalidOpCode());

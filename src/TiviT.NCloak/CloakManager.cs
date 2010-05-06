@@ -67,7 +67,8 @@ namespace TiviT.NCloak
                 RegisterTask(new ConfuseDecompilationTask(ConfusionMethod.InvalidIl));
 
             //Optimize the assembly (turn into short codes where poss)
-            RegisterTask<OptimizeTask>();
+            if (context.Settings.ConfuseDecompilationMethod == ConfusionMethod.None) //HACK: The new Mono.Cecil doesn't like bad IL codes
+                RegisterTask<OptimizeTask>();
 
             //Always last - output the assembly in the relevant format
             if (String.IsNullOrEmpty(context.Settings.TamperProofAssemblyName))

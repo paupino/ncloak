@@ -1,11 +1,14 @@
 ﻿#define VERBOSE
 using System;
+using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System.Reflection;
+using Mono.Cecil.Rocks;
 using MethodAttributes=Mono.Cecil.MethodAttributes;
 using MethodBody=Mono.Cecil.Cil.MethodBody;
 using System.Collections.Generic;
+using Mono.Collections.Generic;
 
 namespace TiviT.NCloak
 {
@@ -20,32 +23,9 @@ namespace TiviT.NCloak
         {
             if (typeReference == null)
                 return null;
-            foreach (TypeDefinition td in typeReference.Module.Types)
+            foreach (TypeDefinition td in typeReference.Module.GetAllTypes())
                 if (td.FullName == typeReference.FullName)
                     return td;
-            return null;
-        }
-
-        public static MethodDefinition FindMethod(this MethodDefinitionCollection methods, string methodName, ParameterDefinitionCollection parameters)
-        {
-            MethodDefinition[] defs = methods.GetMethod(methodName);
-            foreach (MethodDefinition def in defs)
-            {
-                //Check the signature
-                if (def.Parameters.Count == parameters.Count)
-                {
-                    bool isMatch = true;
-                    for (int i = 0; i < def.Parameters.Count && isMatch; i++)
-                    {
-                        if (def.Parameters[i].ParameterType.Name != parameters[i].ParameterType.Name)
-                            isMatch = false;
-                    }
-
-                    //If we are a match then return the type
-                    if (isMatch)
-                        return def;
-                }
-            }
             return null;
         }
 
@@ -93,16 +73,51 @@ namespace TiviT.NCloak
         public static bool Is64BitAssembly(this AssemblyDefinition assemblyDefinition)
         {
             if (assemblyDefinition == null) throw new ArgumentNullException("assemblyDefinition");
-            // ReSharper disable RedundantCaseLabel
-            switch (assemblyDefinition.MainModule.Image.DebugHeader.Magic)
+            switch (assemblyDefinition.MainModule.Architecture)
             {
-                case 0x10b: //0x10b is 32 bit
+                case TargetArchitecture.AMD64:
+                case TargetArchitecture.IA64:
+                    return true;
                 default:
                     return false;
-                case 0x20b:
-                    return true;
             }
-            // ReSharper restore RedundantCaseLabel
+        }
+
+        public static MethodDefinition FindMethod(this Collection<MethodDefinition> methods, string methodName, Collection<ParameterDefinition> parameters)
+        {
+            var defs = from m in methods where m.Name == methodName select m;
+            foreach (MethodDefinition def in defs)
+            {
+                //Check the signature
+                if (def.Parameters.Count == parameters.Count)
+                {
+                    bool isMatch = true;
+                    for (int i = 0; i < def.Parameters.Count && isMatch; i++)
+                    {
+                        if (def.Parameters[i].ParameterType.Name != parameters[i].ParameterType.Name)
+                            isMatch = false;
+                    }
+
+                    //If we are a match then return the type
+                    if (isMatch)
+                        return def;
+                }
+            }
+            return null;
+        }
+
+        public static PropertyDefinition[] FindProperty(this Collection<PropertyDefinition> properties, string name)
+        {
+            var pd = from p in properties where p.Name == name select p;
+            if (pd.Any())
+                return pd.ToArray();
+            return new PropertyDefinition[0];
+        }
+
+        public static bool HasProperty(this Collection<PropertyDefinition> properties, string name)
+        {
+            var pd = from p in properties where p.Name == name select p;
+            return (pd.Any());
         }
 
         public static TypeReference Import(this AssemblyDefinition assemblyDefinition, Type type)
@@ -128,8 +143,8 @@ namespace TiviT.NCloak
                                              MethodAttributes.Public | MethodAttributes.HideBySig |
                                              MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
                                              assembly.Import(typeof(void)));
-            typeDefinition.Constructors.Add(ctor);
-
+            typeDefinition.Methods.Add(ctor);
+            ctor.Body = new MethodBody(ctor);
             //Also define the call to the base type (object)
             return ctor.Body;
         }
@@ -139,18 +154,18 @@ namespace TiviT.NCloak
         /// </summary>
         /// <param name="il">The il.</param>
         /// <param name="opCode">The op code.</param>
-        public static void Append(this CilWorker il, OpCode opCode)
+        public static void Append(this ILProcessor il, OpCode opCode)
         {
             il.Append(il.Create(opCode));
         }
 
-        public static void AdjustOffsets(this CilWorker il, MethodBody body, int adjustBy)
+        public static void AdjustOffsets(this ILProcessor il, MethodBody body, int adjustBy)
         {
             //Adjust everything over 0
             AdjustOffsets(il, body, new List<int> { 0 }, adjustBy);
         }
 
-        public static void AdjustOffsets(this CilWorker il, MethodBody body, IList<int> offsets, int adjustBy)
+        public static void AdjustOffsets(this ILProcessor il, MethodBody body, IList<int> offsets, int adjustBy)
         {
             //Unfortunately one thing Mono.Cecil doesn't do is adjust instruction offsets for branch statements
             //and exception handling start points. We need to fix these manually

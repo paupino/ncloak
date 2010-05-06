@@ -84,7 +84,7 @@ namespace TiviT.NCloak
             {
                 if (assemblyDefinitions.ContainsKey(assembly))
                     continue;
-                assemblyDefinitions.Add(assembly, AssemblyFactory.GetAssembly(assembly));
+                assemblyDefinitions.Add(assembly, AssemblyDefinition.ReadAssembly(assembly));
             }
             assemblyDefinitionsLoaded = true;
             return assemblyDefinitions;
@@ -105,8 +105,13 @@ namespace TiviT.NCloak
             {
                 AssemblyDefinition oldDef = assemblyDefinitions[key];
                 byte[] buffer;
-                AssemblyFactory.SaveAssembly(oldDef, out buffer);
-                assemblyDefinitions[key] = AssemblyFactory.GetAssembly(buffer);
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    oldDef.Write(ms);
+                    buffer = ms.ToArray();
+                }
+                using (MemoryStream ms = new MemoryStream(buffer))
+                    assemblyDefinitions[key] = AssemblyDefinition.ReadAssembly(ms);
             }
         }
     }

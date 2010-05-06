@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Cecil.Rocks;
 
 namespace TiviT.NCloak.CloakTasks
 {
@@ -63,17 +64,20 @@ namespace TiviT.NCloak.CloakTasks
             MethodReference decryptionMethod = null;
 
             //Generate a new type for decryption
-            foreach (TypeDefinition td in definition.MainModule.Types)
+            OutputHelper.WriteLine("Generating global decrypt method");
+            foreach (TypeDefinition td in definition.MainModule.GetAllTypes())
                 if (td.Name == "<Module>")
                 {
-                    MethodDefinition md = new MethodDefinition("Decrypt", MethodAttributes.HideBySig | MethodAttributes.Static | MethodAttributes.Compilercontrolled, definition.Import(typeof(string)));
+                    MethodDefinition md = new MethodDefinition("Decrypt", MethodAttributes.HideBySig | MethodAttributes.Static | MethodAttributes.CompilerControlled, definition.Import(typeof(string)));
 
                     //Generate the parameters
-                    md.Parameters.Add(new ParameterDefinition("v", 0, ParameterAttributes.None, definition.Import(typeof(string))));
-                    md.Parameters.Add(new ParameterDefinition("s", 1, ParameterAttributes.None, definition.Import(typeof(int))));
+                    md.Parameters.Add(new ParameterDefinition("v", ParameterAttributes.None, definition.Import(typeof(string))));
+                    md.Parameters.Add(new ParameterDefinition("s", ParameterAttributes.None, definition.Import(typeof(int))));
 
                     //Add it
                     td.Methods.Add(md);
+                    //We now need to create a method body
+                    md.Body = new MethodBody(md);
 
                     //Output the encryption method body
                     switch (method)
@@ -86,14 +90,15 @@ namespace TiviT.NCloak.CloakTasks
                     }
 
                     //Finally get the reference
-                    decryptionMethod = md.GetOriginalMethod();
+                    decryptionMethod = md.GetElementMethod();
                 }
 
             //Loop through the modules
+            OutputHelper.WriteLine("Processing modules");
             foreach (ModuleDefinition moduleDefinition in definition.Modules)
             {
                 //Go through each type
-                foreach (TypeDefinition typeDefinition in moduleDefinition.Types)
+                foreach (TypeDefinition typeDefinition in moduleDefinition.GetAllTypes())
                 {
                     //Go through each method
                     foreach (MethodDefinition methodDefinition in typeDefinition.Methods)
@@ -115,7 +120,7 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="body">The body.</param>
         private static void GenerateXorDecryptionMethod(AssemblyDefinition assembly, MethodBody body)
         {
-            CilWorker worker = body.CilWorker;
+            var worker = body.GetILProcessor();
 
             //Generate the decryption method
             //Since this is XOR it is the same as the encryption method
@@ -212,8 +217,8 @@ namespace TiviT.NCloak.CloakTasks
         /// <param name="decryptMethod">The decrypt method.</param>
         private void ProcessInstructions(AssemblyDefinition assemblyDef, MethodBody body, MethodReference decryptMethod)
         {
-            InstructionCollection instructions = body.Instructions;
-            CilWorker il = body.CilWorker;
+            var instructions = body.Instructions;
+            var il = body.GetILProcessor();
 
             List<Instruction> instructionsToExpand = new List<Instruction>();
             List<int> offsets = new List<int>();

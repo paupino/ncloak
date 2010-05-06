@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+﻿using Mono.Cecil;
+using Mono.Cecil.Rocks;
 
 namespace TiviT.NCloak.CloakTasks
 {
@@ -42,7 +40,7 @@ namespace TiviT.NCloak.CloakTasks
             foreach (ModuleDefinition moduleDefinition in assembly.Modules)
             {
                 //Go through each type
-                foreach (TypeDefinition typeDefinition in moduleDefinition.Types)
+                foreach (TypeDefinition typeDefinition in moduleDefinition.GetAllTypes())
                 {
                     //Go through each method
                     foreach (MethodDefinition methodDefinition in typeDefinition.Methods)
@@ -51,7 +49,7 @@ namespace TiviT.NCloak.CloakTasks
                         {
                             //Do the method
                             OutputHelper.WriteMethod(typeDefinition, methodDefinition);
-                            methodDefinition.Body.Simplify();
+                            methodDefinition.Body.SimplifyMacros();
                         }
                     }
                 }

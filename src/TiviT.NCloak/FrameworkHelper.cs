@@ -16,7 +16,7 @@ namespace TiviT.NCloak
                 ad = cache[assemblyName];
             else
             {
-                ad = AssemblyFactory.GetAssembly(RuntimeEnvironment.GetRuntimeDirectory() + "\\" + assemblyName);
+                ad = AssemblyDefinition.ReadAssembly(RuntimeEnvironment.GetRuntimeDirectory() + "\\" + assemblyName);
                 cache.Add(assemblyName, ad);
             }
 

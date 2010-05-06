@@ -28,7 +28,7 @@ namespace TiviT.NCloak.CloakTasks
                 //Save the assembly
                 string outputPath = Path.Combine(context.Settings.OutputDirectory, Path.GetFileName(assembly));
                 OutputHelper.WriteLine("Outputting assembly to {0}", outputPath);
-                AssemblyFactory.SaveAssembly(assemblyCache[assembly], outputPath);
+                assemblyCache[assembly].Write(outputPath);
             }
         }
     }
